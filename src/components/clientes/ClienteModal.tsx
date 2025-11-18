@@ -91,7 +91,7 @@ export const ClienteModal = ({ open, onOpenChange, cliente }: ClienteModalProps)
         observacoes: "",
       });
     }
-  }, [cliente, form]);
+  }, [cliente]);
 
   const onSubmit = async (data: ClienteFormData) => {
     try {
@@ -119,13 +119,6 @@ export const ClienteModal = ({ open, onOpenChange, cliente }: ClienteModalProps)
     }
   };
 
-  const handleTelefoneChange = (value: string) => {
-    const formatted = formatarTelefone(value);
-    form.setValue("telefone", formatted, { 
-      shouldValidate: true,
-      shouldDirty: true 
-    });
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -162,12 +155,15 @@ export const ClienteModal = ({ open, onOpenChange, cliente }: ClienteModalProps)
                 <FormItem>
                   <FormLabel>Telefone *</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="(00) 00000-0000"
-                      {...field}
-                      onChange={(e) => handleTelefoneChange(e.target.value)}
-                      maxLength={15}
-                    />
+                  <Input
+                    placeholder="(00) 00000-0000"
+                    {...field}
+                    onChange={(e) => {
+                      const formatted = formatarTelefone(e.target.value);
+                      field.onChange(formatted);
+                    }}
+                    maxLength={15}
+                  />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

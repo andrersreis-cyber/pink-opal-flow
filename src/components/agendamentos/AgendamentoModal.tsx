@@ -113,7 +113,7 @@ export const AgendamentoModal = ({
       });
       setServicoSelecionado(null);
     }
-  }, [agendamento, dataInicial, clienteIdInicial, form, servicos]);
+  }, [agendamento, dataInicial, clienteIdInicial, servicos]);
 
   const onSubmit = async (data: AgendamentoFormData) => {
     try {

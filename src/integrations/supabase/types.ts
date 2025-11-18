@@ -656,6 +656,16 @@ export type Database = {
           telefone: string
         }[]
       }
+      upsert_cliente_completo: {
+        Args: { p_nome: string; p_telefone: string }
+        Returns: {
+          atendimento_ia_status: string
+          etapa_followup: number
+          id: number
+          nome: string
+          telefone: string
+        }[]
+      }
       verificar_disponibilidade: {
         Args: { p_data_fim: string; p_data_inicio: string }
         Returns: {
