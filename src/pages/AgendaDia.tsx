@@ -3,6 +3,7 @@ import { Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAgendamentos } from "@/hooks/useAgendamentos";
+import { AgendamentoModal } from "@/components/agendamentos/AgendamentoModal";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +18,7 @@ const statusColors = {
 
 const AgendaDia = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { agendamentos, isLoading } = useAgendamentos(selectedDate);
 
   return (
@@ -28,7 +30,10 @@ const AgendaDia = () => {
             {format(selectedDate, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR })}
           </p>
         </div>
-        <Button className="gradient-pink-purple">
+        <Button 
+          className="gradient-pink-purple"
+          onClick={() => setIsModalOpen(true)}
+        >
           <Calendar className="mr-2 h-4 w-4" />
           Novo Agendamento
         </Button>
@@ -76,6 +81,12 @@ const AgendaDia = () => {
           )}
         </CardContent>
       </Card>
+
+      <AgendamentoModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        dataInicial={selectedDate}
+      />
     </div>
   );
 };

@@ -5,9 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useClientes } from "@/hooks/useClientes";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ClienteModal } from "@/components/clientes/ClienteModal";
+import { ClienteDetalhesModal } from "@/components/clientes/ClienteDetalhesModal";
 
 const Clientes = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [isNovoClienteOpen, setIsNovoClienteOpen] = useState(false);
+  const [isDetalhesOpen, setIsDetalhesOpen] = useState(false);
+  const [clienteSelecionado, setClienteSelecionado] = useState<number | null>(null);
   const { clientes, isLoading } = useClientes();
 
   const filteredClientes = clientes?.filter(
@@ -23,7 +28,10 @@ const Clientes = () => {
           <h1 className="text-3xl font-bold text-gradient">Clientes</h1>
           <p className="text-muted-foreground mt-2">Gerencie seus clientes</p>
         </div>
-        <Button className="gradient-pink-purple">
+        <Button 
+          className="gradient-pink-purple"
+          onClick={() => setIsNovoClienteOpen(true)}
+        >
           <Plus className="mr-2 h-4 w-4" />
           Novo Cliente
         </Button>
@@ -55,7 +63,14 @@ const Clientes = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredClientes?.map((cliente) => (
-            <Card key={cliente.id} className="glass-card hover:glow-pink transition-all cursor-pointer">
+            <Card 
+              key={cliente.id} 
+              className="glass-card hover:glow-pink transition-all cursor-pointer"
+              onClick={() => {
+                setClienteSelecionado(cliente.id);
+                setIsDetalhesOpen(true);
+              }}
+            >
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold">
@@ -80,6 +95,17 @@ const Clientes = () => {
           ))}
         </div>
       )}
+
+      <ClienteModal
+        open={isNovoClienteOpen}
+        onOpenChange={setIsNovoClienteOpen}
+      />
+
+      <ClienteDetalhesModal
+        open={isDetalhesOpen}
+        onOpenChange={setIsDetalhesOpen}
+        clienteId={clienteSelecionado}
+      />
     </div>
   );
 };
