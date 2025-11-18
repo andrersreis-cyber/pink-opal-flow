@@ -4,8 +4,13 @@ import { ProximosAgendamentos } from "@/components/dashboard/ProximosAgendamento
 import { AtividadesRecentes } from "@/components/dashboard/AtividadesRecentes";
 import { StatsDetailModal } from "@/components/dashboard/StatsDetailModal";
 import { AgendamentoModal } from "@/components/agendamentos/AgendamentoModal";
+import { ReceitaChart } from "@/components/dashboard/ReceitaChart";
+import { ServicosChart } from "@/components/dashboard/ServicosChart";
+import { StatusChart } from "@/components/dashboard/StatusChart";
+import { OcupacaoCard } from "@/components/dashboard/OcupacaoCard";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useDashboardAgendamentos } from "@/hooks/useDashboardAgendamentos";
+import { useDashboardCharts } from "@/hooks/useDashboardCharts";
 import { useAgendamentos } from "@/hooks/useAgendamentos";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
@@ -15,6 +20,7 @@ import { toast } from "sonner";
 const Dashboard = () => {
   const navigate = useNavigate();
   const { stats, isLoading } = useDashboardStats();
+  const { receita, servicos, status, ocupacao } = useDashboardCharts();
   const { updateAgendamento } = useAgendamentos();
   
   // Estados para modais
@@ -107,6 +113,17 @@ const Dashboard = () => {
             />
           </>
         )}
+      </div>
+
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <ReceitaChart data={receita.data || []} isLoading={receita.isLoading} />
+        <OcupacaoCard data={ocupacao.data} isLoading={ocupacao.isLoading} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ServicosChart data={servicos.data || []} isLoading={servicos.isLoading} />
+        <StatusChart data={status.data || []} isLoading={status.isLoading} />
       </div>
 
       {/* Content Grid */}
