@@ -1,0 +1,402 @@
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useClientes } from "@/hooks/useClientes";
+import { useServicos } from "@/hooks/useServicos";
+import { useAgendamentos } from "@/hooks/useAgendamentos";
+import { gerarHorarios, criarDataHora, verificarConflito } from "@/lib/dateUtils";
+import { formatarPreco } from "@/lib/formatUtils";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { CalendarIcon, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+const agendamentoSchema = z.object({
+  cliente_id: z.number().min(1, "Selecione um cliente"),
+  servico_id: z.string().min(1, "Selecione um serviço"),
+  data: z.date({ required_error: "Selecione uma data" }),
+  hora: z.string().regex(/^\d{2}:\d{2}$/, "Selecione um horário"),
+  status: z.enum(["confirmado", "pendente", "cancelado", "remarcado"]),
+  observacoes: z.string().optional(),
+});
+
+type AgendamentoFormData = z.infer<typeof agendamentoSchema>;
+
+interface AgendamentoModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  agendamento?: any;
+  dataInicial?: Date;
+  clienteIdInicial?: number;
+}
+
+export const AgendamentoModal = ({
+  open,
+  onOpenChange,
+  agendamento,
+  dataInicial,
+  clienteIdInicial,
+}: AgendamentoModalProps) => {
+  const { clientes } = useClientes();
+  const { servicosPorCategoria, servicos } = useServicos();
+  const { createAgendamento, updateAgendamento } = useAgendamentos();
+  const { agendamentos: todosAgendamentos } = useAgendamentos();
+  const [servicoSelecionado, setServicoSelecionado] = useState<any>(null);
+  const isEditing = !!agendamento;
+
+  const form = useForm<AgendamentoFormData>({
+    resolver: zodResolver(agendamentoSchema),
+    defaultValues: {
+      cliente_id: clienteIdInicial || 0,
+      servico_id: "",
+      data: dataInicial || new Date(),
+      hora: "",
+      status: "pendente",
+      observacoes: "",
+    },
+  });
+
+  useEffect(() => {
+    if (agendamento) {
+      const dataAgendamento = new Date(agendamento.data);
+      form.reset({
+        cliente_id: agendamento.cliente_id,
+        servico_id: agendamento.servico_id,
+        data: dataAgendamento,
+        hora: format(dataAgendamento, "HH:mm"),
+        status: agendamento.status,
+        observacoes: agendamento.observacoes || "",
+      });
+      const servico = servicos?.find((s) => s.id === agendamento.servico_id);
+      setServicoSelecionado(servico);
+    } else {
+      form.reset({
+        cliente_id: clienteIdInicial || 0,
+        servico_id: "",
+        data: dataInicial || new Date(),
+        hora: "",
+        status: "pendente",
+        observacoes: "",
+      });
+      setServicoSelecionado(null);
+    }
+  }, [agendamento, dataInicial, clienteIdInicial, form, servicos]);
+
+  const onSubmit = async (data: AgendamentoFormData) => {
+    if (!servicoSelecionado) {
+      toast.error("Selecione um serviço válido");
+      return;
+    }
+
+    // Verificar conflito de horário
+    const dataStr = format(data.data, "yyyy-MM-dd");
+    const hasConflito = verificarConflito(
+      dataStr,
+      data.hora,
+      servicoSelecionado.duracao_minutos,
+      todosAgendamentos || [],
+      agendamento?.id
+    );
+
+    if (hasConflito) {
+      toast.error("Este horário já está ocupado. Por favor, escolha outro horário.");
+      return;
+    }
+
+    const dataHoraISO = criarDataHora(dataStr, data.hora);
+
+    const agendamentoData = {
+      cliente_id: data.cliente_id,
+      servico_id: data.servico_id,
+      data: dataHoraISO,
+      duracao_minutos: servicoSelecionado.duracao_minutos,
+      preco: servicoSelecionado.preco,
+      status: data.status,
+      observacoes: data.observacoes || undefined,
+    };
+
+    try {
+      if (isEditing) {
+        await updateAgendamento.mutateAsync({
+          id: agendamento.id,
+          data: dataHoraISO,
+          status: data.status,
+          observacoes: data.observacoes,
+        });
+      } else {
+        await createAgendamento.mutateAsync(agendamentoData);
+      }
+
+      onOpenChange(false);
+      form.reset();
+      setServicoSelecionado(null);
+    } catch (error) {
+      console.error("Erro ao salvar agendamento:", error);
+    }
+  };
+
+  const handleServicoChange = (servicoId: string) => {
+    const servico = servicos?.find((s) => s.id === servicoId);
+    setServicoSelecionado(servico);
+    form.setValue("servico_id", servicoId);
+  };
+
+  const horarios = gerarHorarios();
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="glass-card sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {isEditing ? "Editar Agendamento" : "Novo Agendamento"}
+          </DialogTitle>
+          <DialogDescription>
+            {isEditing
+              ? "Atualize as informações do agendamento"
+              : "Preencha os dados para criar um novo agendamento"}
+          </DialogDescription>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="cliente_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cliente *</FormLabel>
+                  <Select
+                    onValueChange={(value) => field.onChange(Number(value))}
+                    value={field.value?.toString()}
+                    disabled={isEditing}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um cliente" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {clientes?.map((cliente) => (
+                        <SelectItem key={cliente.id} value={cliente.id.toString()}>
+                          {cliente.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="servico_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Serviço *</FormLabel>
+                  <Select
+                    onValueChange={handleServicoChange}
+                    value={field.value}
+                    disabled={isEditing}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um serviço" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {servicosPorCategoria &&
+                        Object.entries(servicosPorCategoria).map(([categoria, servs]) => (
+                          <div key={categoria}>
+                            <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
+                              {categoria}
+                            </div>
+                            {servs.map((servico) => (
+                              <SelectItem key={servico.id} value={servico.id}>
+                                {servico.nome} - {formatarPreco(servico.preco)} (
+                                {servico.duracao_minutos}min)
+                              </SelectItem>
+                            ))}
+                          </div>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {servicoSelecionado && (
+              <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 space-y-1">
+                <p className="text-sm">
+                  <span className="font-semibold">Duração:</span>{" "}
+                  {servicoSelecionado.duracao_minutos} minutos
+                </p>
+                <p className="text-sm">
+                  <span className="font-semibold">Preço:</span>{" "}
+                  {formatarPreco(servicoSelecionado.preco)}
+                </p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="data"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Data *</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "dd/MM/yyyy", { locale: ptBR })
+                            ) : (
+                              <span>Selecione</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="hora"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Hora *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {horarios.map((hora) => (
+                          <SelectItem key={hora} value={hora}>
+                            {hora}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status *</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="pendente">Pendente</SelectItem>
+                      <SelectItem value="confirmado">Confirmado</SelectItem>
+                      <SelectItem value="cancelado">Cancelado</SelectItem>
+                      <SelectItem value="remarcado">Remarcado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="observacoes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Observações</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Informações adicionais sobre o agendamento"
+                      className="min-h-[80px]"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                className="gradient-pink-purple"
+                disabled={createAgendamento.isPending || updateAgendamento.isPending}
+              >
+                {(createAgendamento.isPending || updateAgendamento.isPending) && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {isEditing ? "Salvar" : "Criar Agendamento"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+};
