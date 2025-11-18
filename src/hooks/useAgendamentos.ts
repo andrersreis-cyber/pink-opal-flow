@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { getTodayUTC } from "@/lib/dateUtils";
 
 export const useAgendamentos = (date?: Date) => {
   const queryClient = useQueryClient();
@@ -15,10 +16,18 @@ export const useAgendamentos = (date?: Date) => {
         .order("data", { ascending: true });
       
       if (date) {
-        const dateStr = format(date, "yyyy-MM-dd");
+        // Extrair componentes UTC do objeto Date
+        const year = date.getUTCFullYear();
+        const month = date.getUTCMonth();
+        const day = date.getUTCDate();
+        
+        // Usar Date.UTC para criar timestamps corretos
+        const startOfDay = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+        const endOfDay = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
+        
         query = query
-          .gte("data", `${dateStr}T00:00:00`)
-          .lt("data", `${dateStr}T23:59:59`);
+          .gte("data", startOfDay.toISOString())
+          .lte("data", endOfDay.toISOString());
       }
       
       const { data, error } = await query;

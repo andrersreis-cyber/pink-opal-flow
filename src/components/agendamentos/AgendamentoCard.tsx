@@ -13,7 +13,7 @@ import {
   MoreVertical,
   Edit 
 } from "lucide-react";
-import { format } from "date-fns";
+import { formatTimeUTC } from "@/lib/dateUtils";
 
 const statusColors = {
   confirmado: "bg-success/20 text-success",
@@ -40,7 +40,7 @@ export const AgendamentoCard = ({
   return (
     <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group">
       <div className="text-sm font-semibold text-primary min-w-[60px]">
-        {agendamento.data ? format(new Date(agendamento.data), "HH:mm") : "--:--"}
+        {agendamento.data ? formatTimeUTC(agendamento.data) : "--:--"}
       </div>
       <div className="flex-1">
         <p className="font-medium text-foreground">{agendamento.cliente_nome}</p>

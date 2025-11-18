@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { subDays, format } from "date-fns";
+import { formatDateDisplayUTC, getTodayUTC } from "@/lib/dateUtils";
 
 export const useDashboardCharts = () => {
   // 1. Receita ao longo do tempo (30 dias)
@@ -16,7 +17,7 @@ export const useDashboardCharts = () => {
       if (error) throw error;
       
       return data?.map(d => ({
-        dia: format(new Date(d.dia!), "dd/MM"),
+        dia: formatDateDisplayUTC(d.dia!),
         prevista: Number(d.receita_prevista || 0),
         realizada: Number(d.receita_realizada || 0),
         agendamentos: d.total_agendamentos,
@@ -66,7 +67,7 @@ export const useDashboardCharts = () => {
       if (error) throw error;
       
       return data?.map(d => ({
-        dia: format(new Date(d.dia!), "dd/MM"),
+        dia: formatDateDisplayUTC(d.dia!),
         confirmados: d.confirmados,
         pendentes: d.pendentes,
         cancelados: d.cancelados,
@@ -78,7 +79,7 @@ export const useDashboardCharts = () => {
   const { data: ocupacaoData, isLoading: ocupacaoLoading } = useQuery({
     queryKey: ["dashboard-ocupacao"],
     queryFn: async () => {
-      const hoje = format(new Date(), "yyyy-MM-dd");
+      const hoje = getTodayUTC();
       const { data, error } = await supabase
         .from("vw_estatisticas_dia")
         .select("*")

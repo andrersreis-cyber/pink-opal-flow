@@ -624,6 +624,10 @@ export type Database = {
           sucesso: boolean
         }[]
       }
+      formatar_telefone_whatsapp: {
+        Args: { telefone_text: string }
+        Returns: string
+      }
       listar_agendamentos_por_telefone: {
         Args: { p_telefone: string }
         Returns: {
@@ -648,6 +652,10 @@ export type Database = {
         }[]
       }
       normalizar_telefone: { Args: { telefone_text: string }; Returns: string }
+      normalizar_telefone_insercao: {
+        Args: { telefone_text: string }
+        Returns: string
+      }
       obter_cliente_id_por_telefone: {
         Args: { p_telefone: string }
         Returns: {

@@ -12,7 +12,7 @@ import {
   Edit,
   Clock
 } from "lucide-react";
-import { format } from "date-fns";
+import { formatTimeUTC } from "@/lib/dateUtils";
 
 const statusConfig = {
   confirmado: { 
@@ -56,7 +56,7 @@ export const AgendamentoCardCompact = ({
         <Card className={`p-3 cursor-pointer transition-all border ${config.color}`}>
           {/* Horário */}
           <div className="text-lg font-bold text-primary mb-2">
-            {agendamento.data ? format(new Date(agendamento.data), "HH:mm") : "--:--"}
+            {agendamento.data ? formatTimeUTC(agendamento.data) : "--:--"}
           </div>
           
           {/* Nome do Cliente */}

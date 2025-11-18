@@ -1,3 +1,49 @@
+/**
+ * Utilitários UTC para formatação de data/hora
+ * IMPORTANTE: Sempre usar UTC para dados do banco de dados
+ */
+
+// Formatar horário UTC de um timestamp ISO (ex: "2024-11-30T14:00:00Z" → "14:00")
+export const formatTimeUTC = (isoString: string): string => {
+  const date = new Date(isoString);
+  const hours = String(date.getUTCHours()).padStart(2, '0');
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
+
+// Formatar data UTC de um timestamp ISO (ex: "2024-11-30T14:00:00Z" → "2024-11-30")
+export const formatDateUTC = (isoString: string): string => {
+  const date = new Date(isoString);
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Formatar data UTC para exibição (ex: "2024-11-30T14:00:00Z" → "30/11")
+export const formatDateDisplayUTC = (isoString: string): string => {
+  const date = new Date(isoString);
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  return `${day}/${month}`;
+};
+
+// Obter data de hoje em UTC (formato YYYY-MM-DD)
+export const getTodayUTC = (): string => {
+  const now = new Date();
+  const year = now.getUTCFullYear();
+  const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(now.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Criar data/hora em UTC mantendo o horário correto
+export const criarDataHoraUTC = (data: string, hora: string): string => {
+  const [year, month, day] = data.split('-').map(Number);
+  const [hours, minutes] = hora.split(':').map(Number);
+  return new Date(Date.UTC(year, month - 1, day, hours, minutes, 0, 0)).toISOString();
+};
+
 // Gerar horários disponíveis (30min de intervalo, 08:00 - 20:00)
 export const gerarHorarios = (): string[] => {
   const horarios: string[] = [];
@@ -10,20 +56,9 @@ export const gerarHorarios = (): string[] => {
   return horarios;
 };
 
-// Converter data + hora para ISO 8601
+// Converter data + hora para ISO 8601 (mantém UTC)
 export const criarDataHora = (data: string, hora: string): string => {
-  try {
-    const dataHora = new Date(`${data}T${hora}:00`);
-    
-    if (isNaN(dataHora.getTime())) {
-      throw new Error(`Data/hora inválida: ${data} ${hora}`);
-    }
-    
-    return dataHora.toISOString();
-  } catch (error) {
-    console.error("Erro ao criar data/hora:", error);
-    throw error;
-  }
+  return criarDataHoraUTC(data, hora);
 };
 
 // Verificar conflito de horário
