@@ -17,7 +17,7 @@ const variantStyles = {
 
 export const StatsCard = ({ icon: Icon, title, value, variant }: StatsCardProps) => {
   return (
-    <Card className="glass-card p-6 hover:glow-pink transition-all">
+    <Card className="glass-card p-6 hover:glow-pink transition-all cursor-pointer">
       <div className="flex items-center gap-4">
         <div className={`p-3 rounded-lg ${variantStyles[variant]}`}>
           <Icon className="h-6 w-6" />

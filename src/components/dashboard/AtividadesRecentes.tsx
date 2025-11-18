@@ -37,32 +37,33 @@ export const AtividadesRecentes = () => {
         <CardTitle>Atividades Recentes</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className="space-y-3">
           {atividades?.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
               Nenhuma atividade recente
             </p>
           ) : (
             atividades?.map((atividade) => (
-              <div key={atividade.id} className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <div
-                    className={`w-3 h-3 rounded-full ${
-                      tipoColors[atividade.tipo as keyof typeof tipoColors] || "bg-muted"
-                    }`}
-                  />
-                  <div className="w-px h-full bg-border mt-2" />
-                </div>
-                <div className="flex-1 pb-4">
-                  <p className="text-sm text-foreground">{atividade.descricao}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {formatDistanceToNow(new Date(atividade.created_at), {
-                      addSuffix: true,
-                      locale: ptBR,
-                    })}
-                  </p>
-                </div>
-              </div>
+              <Card key={atividade.id} className="bg-muted/30 border-0 hover:bg-muted/50 transition-colors">
+                <CardContent className="p-4">
+                  <div className="flex gap-3 items-start">
+                    <div
+                      className={`w-2 h-2 rounded-full mt-2 ${
+                        tipoColors[atividade.tipo as keyof typeof tipoColors] || "bg-muted"
+                      }`}
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm text-foreground font-medium">{atividade.descricao}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {formatDistanceToNow(new Date(atividade.created_at), {
+                          addSuffix: true,
+                          locale: ptBR,
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             ))
           )}
         </div>
