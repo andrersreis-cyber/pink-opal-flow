@@ -6,6 +6,7 @@ interface StatsCardProps {
   title: string;
   value: number;
   variant: "pink" | "purple" | "green" | "yellow";
+  onClick?: () => void;
 }
 
 const variantStyles = {
@@ -15,9 +16,9 @@ const variantStyles = {
   yellow: "bg-warning/20 text-warning",
 };
 
-export const StatsCard = ({ icon: Icon, title, value, variant }: StatsCardProps) => {
+export const StatsCard = ({ icon: Icon, title, value, variant, onClick }: StatsCardProps) => {
   return (
-    <Card className="glass-card p-6 hover:glow-pink transition-all cursor-pointer">
+    <Card className="glass-card p-6 hover:glow-pink transition-all cursor-pointer" onClick={onClick}>
       <div className="flex items-center gap-4">
         <div className={`p-3 rounded-lg ${variantStyles[variant]}`}>
           <Icon className="h-6 w-6" />
