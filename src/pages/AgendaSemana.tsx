@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useAgendamentosSemana } from "@/hooks/useAgendamentosSemana";
 import { useAgendamentos } from "@/hooks/useAgendamentos";
 import { AgendamentoModal } from "@/components/agendamentos/AgendamentoModal";
-import { AgendamentoCard } from "@/components/agendamentos/AgendamentoCard";
+import { AgendamentoCardCompact } from "@/components/agendamentos/AgendamentoCardCompact";
 import { format, addWeeks, subWeeks, isSameDay, startOfWeek, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -158,7 +158,7 @@ const AgendaSemana = () => {
                   ) : (
                     <div className="space-y-2">
                       {agendamentosDoDia.map((agendamento) => (
-                        <AgendamentoCard
+                        <AgendamentoCardCompact
                           key={agendamento.id}
                           agendamento={agendamento}
                           onConfirmar={handleConfirmar}
