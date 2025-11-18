@@ -38,13 +38,30 @@ export const useAgendamentos = (date?: Date) => {
       status: string;
       observacoes?: string;
     }) => {
+      // Validar dados antes de inserir
+      if (!newAgendamento.cliente_id || newAgendamento.cliente_id <= 0) {
+        throw new Error("Cliente inválido");
+      }
+      
+      if (!newAgendamento.servico_id) {
+        throw new Error("Serviço inválido");
+      }
+      
+      if (!newAgendamento.data) {
+        throw new Error("Data inválida");
+      }
+
       const { data, error } = await supabase
         .from("agendamentos")
         .insert([newAgendamento])
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Erro do Supabase:", error);
+        throw new Error(error.message || "Erro ao criar agendamento");
+      }
+      
       return data;
     },
     onSuccess: () => {
@@ -52,6 +69,7 @@ export const useAgendamentos = (date?: Date) => {
       toast.success("Agendamento criado com sucesso!");
     },
     onError: (error: Error) => {
+      console.error("Erro na mutation:", error);
       toast.error("Erro ao criar agendamento: " + error.message);
     },
   });

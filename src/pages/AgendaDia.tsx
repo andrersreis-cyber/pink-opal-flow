@@ -4,22 +4,47 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAgendamentos } from "@/hooks/useAgendamentos";
 import { AgendamentoModal } from "@/components/agendamentos/AgendamentoModal";
+import { AgendamentoCard } from "@/components/agendamentos/AgendamentoCard";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-
-const statusColors = {
-  confirmado: "bg-success/20 text-success",
-  pendente: "bg-warning/20 text-warning",
-  cancelado: "bg-destructive/20 text-destructive",
-  remarcado: "bg-info/20 text-info",
-};
+import { toast } from "sonner";
 
 const AgendaDia = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { agendamentos, isLoading } = useAgendamentos(selectedDate);
+  const [agendamentoParaEditar, setAgendamentoParaEditar] = useState<any>(null);
+  const { agendamentos, isLoading, updateAgendamento } = useAgendamentos(selectedDate);
+
+  const handleConfirmar = async (id: number) => {
+    try {
+      await updateAgendamento.mutateAsync({ id, status: 'confirmado' });
+      toast.success("Agendamento confirmado!");
+    } catch (error) {
+      console.error('Erro ao confirmar:', error);
+      toast.error("Erro ao confirmar agendamento");
+    }
+  };
+
+  const handleCancelar = async (id: number) => {
+    try {
+      await updateAgendamento.mutateAsync({ id, status: 'cancelado' });
+      toast.success("Agendamento cancelado!");
+    } catch (error) {
+      console.error('Erro ao cancelar:', error);
+      toast.error("Erro ao cancelar agendamento");
+    }
+  };
+
+  const handleRemarcar = (agendamento: any) => {
+    setAgendamentoParaEditar(agendamento);
+    setIsModalOpen(true);
+  };
+
+  const handleEditar = (agendamento: any) => {
+    setAgendamentoParaEditar(agendamento);
+    setIsModalOpen(true);
+  };
 
   return (
     <div className="space-y-8">
@@ -58,24 +83,14 @@ const AgendaDia = () => {
           ) : (
             <div className="space-y-3">
               {agendamentos?.map((agendamento) => (
-                <div
+                <AgendamentoCard
                   key={agendamento.id}
-                  className="flex items-center gap-4 p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
-                >
-                  <div className="text-sm font-semibold text-primary min-w-[60px]">
-                    {agendamento.data ? format(new Date(agendamento.data), "HH:mm") : "--:--"}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-foreground">{agendamento.cliente_nome}</p>
-                    <p className="text-sm text-muted-foreground">{agendamento.servico_nome}</p>
-                  </div>
-                  <Badge className={statusColors[agendamento.status as keyof typeof statusColors] || ""}>
-                    {agendamento.status}
-                  </Badge>
-                  <div className="text-sm text-muted-foreground">
-                    {agendamento.duracao_minutos} min
-                  </div>
-                </div>
+                  agendamento={agendamento}
+                  onConfirmar={handleConfirmar}
+                  onCancelar={handleCancelar}
+                  onRemarcar={handleRemarcar}
+                  onEditar={handleEditar}
+                />
               ))}
             </div>
           )}
@@ -84,7 +99,11 @@ const AgendaDia = () => {
 
       <AgendamentoModal
         open={isModalOpen}
-        onOpenChange={setIsModalOpen}
+        onOpenChange={(open) => {
+          setIsModalOpen(open);
+          if (!open) setAgendamentoParaEditar(null);
+        }}
+        agendamento={agendamentoParaEditar}
         dataInicial={selectedDate}
       />
     </div>

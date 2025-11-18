@@ -42,7 +42,10 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 const agendamentoSchema = z.object({
-  cliente_id: z.number().min(1, "Selecione um cliente"),
+  cliente_id: z.number({
+    required_error: "Selecione um cliente",
+    invalid_type_error: "Cliente inválido"
+  }).positive("Selecione um cliente"),
   servico_id: z.string().min(1, "Selecione um serviço"),
   data: z.date({ required_error: "Selecione uma data" }),
   hora: z.string().regex(/^\d{2}:\d{2}$/, "Selecione um horário"),
@@ -77,7 +80,7 @@ export const AgendamentoModal = ({
   const form = useForm<AgendamentoFormData>({
     resolver: zodResolver(agendamentoSchema),
     defaultValues: {
-      cliente_id: clienteIdInicial || 0,
+      cliente_id: clienteIdInicial || undefined,
       servico_id: "",
       data: dataInicial || new Date(),
       hora: "",
@@ -101,7 +104,7 @@ export const AgendamentoModal = ({
       setServicoSelecionado(servico);
     } else {
       form.reset({
-        cliente_id: clienteIdInicial || 0,
+        cliente_id: clienteIdInicial || undefined,
         servico_id: "",
         data: dataInicial || new Date(),
         hora: "",
@@ -113,39 +116,45 @@ export const AgendamentoModal = ({
   }, [agendamento, dataInicial, clienteIdInicial, form, servicos]);
 
   const onSubmit = async (data: AgendamentoFormData) => {
-    if (!servicoSelecionado) {
-      toast.error("Selecione um serviço válido");
-      return;
-    }
-
-    // Verificar conflito de horário
-    const dataStr = format(data.data, "yyyy-MM-dd");
-    const hasConflito = verificarConflito(
-      dataStr,
-      data.hora,
-      servicoSelecionado.duracao_minutos,
-      todosAgendamentos || [],
-      agendamento?.id
-    );
-
-    if (hasConflito) {
-      toast.error("Este horário já está ocupado. Por favor, escolha outro horário.");
-      return;
-    }
-
-    const dataHoraISO = criarDataHora(dataStr, data.hora);
-
-    const agendamentoData = {
-      cliente_id: data.cliente_id,
-      servico_id: data.servico_id,
-      data: dataHoraISO,
-      duracao_minutos: servicoSelecionado.duracao_minutos,
-      preco: servicoSelecionado.preco,
-      status: data.status,
-      observacoes: data.observacoes || undefined,
-    };
-
     try {
+      if (!servicoSelecionado) {
+        toast.error("Selecione um serviço válido");
+        return;
+      }
+
+      // Validar cliente_id explicitamente
+      if (!data.cliente_id || data.cliente_id <= 0) {
+        toast.error("Selecione um cliente válido");
+        return;
+      }
+
+      // Verificar conflito de horário
+      const dataStr = format(data.data, "yyyy-MM-dd");
+      const hasConflito = verificarConflito(
+        dataStr,
+        data.hora,
+        servicoSelecionado.duracao_minutos,
+        todosAgendamentos || [],
+        agendamento?.id
+      );
+
+      if (hasConflito) {
+        toast.error("Este horário já está ocupado. Por favor, escolha outro horário.");
+        return;
+      }
+
+      const dataHoraISO = criarDataHora(dataStr, data.hora);
+
+      const agendamentoData = {
+        cliente_id: data.cliente_id,
+        servico_id: data.servico_id,
+        data: dataHoraISO,
+        duracao_minutos: servicoSelecionado.duracao_minutos,
+        preco: servicoSelecionado.preco,
+        status: data.status,
+        observacoes: data.observacoes || undefined,
+      };
+
       if (isEditing) {
         await updateAgendamento.mutateAsync({
           id: agendamento.id,
@@ -160,8 +169,9 @@ export const AgendamentoModal = ({
       onOpenChange(false);
       form.reset();
       setServicoSelecionado(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao salvar agendamento:", error);
+      toast.error(error.message || "Erro ao salvar agendamento");
     }
   };
 
@@ -197,7 +207,7 @@ export const AgendamentoModal = ({
                   <FormLabel>Cliente *</FormLabel>
                   <Select
                     onValueChange={(value) => field.onChange(Number(value))}
-                    value={field.value?.toString()}
+                    value={field.value ? field.value.toString() : ""}
                     disabled={isEditing}
                   >
                     <FormControl>

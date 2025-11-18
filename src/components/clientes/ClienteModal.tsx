@@ -24,12 +24,27 @@ import { Button } from "@/components/ui/button";
 import { useClientes } from "@/hooks/useClientes";
 import { formatarTelefone, limparTelefone } from "@/lib/formatUtils";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 const clienteSchema = z.object({
-  nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
-  telefone: z.string().min(14, "Telefone inválido"),
-  email: z.string().email("Email inválido").optional().or(z.literal("")),
-  observacoes: z.string().optional(),
+  nome: z.string()
+    .min(3, "Nome deve ter pelo menos 3 caracteres")
+    .max(100, "Nome muito longo"),
+  telefone: z.string()
+    .min(1, "Telefone é obrigatório")
+    .refine(
+      (val) => {
+        const cleaned = limparTelefone(val);
+        return cleaned.length >= 10 && cleaned.length <= 11;
+      },
+      { message: "Telefone inválido (use formato brasileiro)" }
+    ),
+  email: z.string()
+    .email("Email inválido")
+    .optional()
+    .or(z.literal(""))
+    .nullable(),
+  observacoes: z.string().optional().nullable(),
 });
 
 type ClienteFormData = z.infer<typeof clienteSchema>;
@@ -79,29 +94,37 @@ export const ClienteModal = ({ open, onOpenChange, cliente }: ClienteModalProps)
   }, [cliente, form]);
 
   const onSubmit = async (data: ClienteFormData) => {
-    const clienteData = {
-      nome: data.nome,
-      telefone: limparTelefone(data.telefone),
-      email: data.email || undefined,
-      observacoes: data.observacoes || undefined,
-    };
+    try {
+      const clienteData = {
+        nome: data.nome.trim(),
+        telefone: limparTelefone(data.telefone),
+        email: data.email || undefined,
+        observacoes: data.observacoes || undefined,
+      };
 
-    if (isEditing) {
-      await updateCliente.mutateAsync({
-        id: cliente.id,
-        ...clienteData,
-      });
-    } else {
-      await createCliente.mutateAsync(clienteData);
+      if (isEditing) {
+        await updateCliente.mutateAsync({
+          id: cliente.id,
+          ...clienteData,
+        });
+      } else {
+        await createCliente.mutateAsync(clienteData);
+      }
+
+      onOpenChange(false);
+      form.reset();
+    } catch (error: any) {
+      console.error("Erro ao salvar cliente:", error);
+      toast.error(error.message || "Erro ao salvar cliente");
     }
-
-    onOpenChange(false);
-    form.reset();
   };
 
   const handleTelefoneChange = (value: string) => {
     const formatted = formatarTelefone(value);
-    form.setValue("telefone", formatted);
+    form.setValue("telefone", formatted, { 
+      shouldValidate: true,
+      shouldDirty: true 
+    });
   };
 
   return (
