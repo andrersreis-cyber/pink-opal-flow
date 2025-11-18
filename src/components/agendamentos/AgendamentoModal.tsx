@@ -33,7 +33,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useClientes } from "@/hooks/useClientes";
 import { useServicos } from "@/hooks/useServicos";
 import { useAgendamentos } from "@/hooks/useAgendamentos";
-import { gerarHorarios, criarDataHora, verificarConflito } from "@/lib/dateUtils";
+import { gerarHorarios, criarDataHora, verificarConflito, formatTimeUTC } from "@/lib/dateUtils";
 import { formatarPreco } from "@/lib/formatUtils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -96,7 +96,7 @@ export const AgendamentoModal = ({
         cliente_id: agendamento.cliente_id,
         servico_id: agendamento.servico_id,
         data: dataAgendamento,
-        hora: format(dataAgendamento, "HH:mm"),
+        hora: formatTimeUTC(agendamento.data),
         status: agendamento.status,
         observacoes: agendamento.observacoes || "",
       });

@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, subDays } from "date-fns";
+import { getTodayUTC } from "@/lib/dateUtils";
 
 export const useDashboardStats = () => {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
-      const today = format(new Date(), "yyyy-MM-dd");
+      const today = getTodayUTC();
       const weekAgo = format(subDays(new Date(), 7), "yyyy-MM-dd");
 
       // Agendamentos de hoje

@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
+import { getTodayUTC } from "@/lib/dateUtils";
 
 export const useDashboardAgendamentos = (status?: string) => {
   const { data: agendamentos, isLoading } = useQuery({
     queryKey: ["dashboard-agendamentos", status],
     queryFn: async () => {
-      const today = format(new Date(), "yyyy-MM-dd");
+      const today = getTodayUTC();
       
       let query = supabase
         .from("vw_agendamentos_completos")
