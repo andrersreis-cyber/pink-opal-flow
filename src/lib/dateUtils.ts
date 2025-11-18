@@ -12,7 +12,18 @@ export const gerarHorarios = (): string[] => {
 
 // Converter data + hora para ISO 8601
 export const criarDataHora = (data: string, hora: string): string => {
-  return new Date(`${data}T${hora}:00`).toISOString();
+  try {
+    const dataHora = new Date(`${data}T${hora}:00`);
+    
+    if (isNaN(dataHora.getTime())) {
+      throw new Error(`Data/hora inválida: ${data} ${hora}`);
+    }
+    
+    return dataHora.toISOString();
+  } catch (error) {
+    console.error("Erro ao criar data/hora:", error);
+    throw error;
+  }
 };
 
 // Verificar conflito de horário
@@ -23,27 +34,43 @@ export const verificarConflito = (
   agendamentos: any[],
   agendamentoAtualId?: number
 ): boolean => {
-  const novoInicio = new Date(`${data}T${hora}:00`);
-  const novoFim = new Date(novoInicio.getTime() + duracao * 60000);
-  
-  return agendamentos.some(ag => {
-    // Ignorar o agendamento atual ao editar
-    if (agendamentoAtualId && ag.id === agendamentoAtualId) {
-      return false;
+  try {
+    const novoInicio = new Date(`${data}T${hora}:00`);
+    const novoFim = new Date(novoInicio.getTime() + duracao * 60000);
+    
+    // Validar se as datas são válidas
+    if (isNaN(novoInicio.getTime()) || isNaN(novoFim.getTime())) {
+      console.error("Data inválida:", data, hora);
+      return true; // Considerar conflito se data inválida
     }
     
-    // Ignorar agendamentos cancelados
-    if (ag.status === 'cancelado') {
-      return false;
-    }
-    
-    const agInicio = new Date(ag.data);
-    const agFim = new Date(agInicio.getTime() + ag.duracao_minutos * 60000);
-    
-    return (
-      (novoInicio >= agInicio && novoInicio < agFim) ||
-      (novoFim > agInicio && novoFim <= agFim) ||
-      (novoInicio <= agInicio && novoFim >= agFim)
-    );
-  });
+    return agendamentos.some(ag => {
+      // Ignorar o agendamento atual ao editar
+      if (agendamentoAtualId && ag.id === agendamentoAtualId) {
+        return false;
+      }
+      
+      // Ignorar agendamentos cancelados
+      if (ag.status === 'cancelado') {
+        return false;
+      }
+      
+      const agInicio = new Date(ag.data);
+      const agFim = new Date(agInicio.getTime() + ag.duracao_minutos * 60000);
+      
+      // Validar datas do agendamento
+      if (isNaN(agInicio.getTime()) || isNaN(agFim.getTime())) {
+        return false;
+      }
+      
+      return (
+        (novoInicio >= agInicio && novoInicio < agFim) ||
+        (novoFim > agInicio && novoFim <= agFim) ||
+        (novoInicio <= agInicio && novoFim >= agFim)
+      );
+    });
+  } catch (error) {
+    console.error("Erro ao verificar conflito:", error);
+    return true; // Considerar conflito em caso de erro
+  }
 };
