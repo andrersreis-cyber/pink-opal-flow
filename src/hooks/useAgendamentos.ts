@@ -66,6 +66,10 @@ export const useAgendamentos = (date?: Date) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["agendamentos"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-agendamentos"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["agendamentos-semana"] });
+      queryClient.invalidateQueries({ queryKey: ["agendamentos-mes"] });
       toast.success("Agendamento criado com sucesso!");
     },
     onError: (error: Error) => {
@@ -93,6 +97,10 @@ export const useAgendamentos = (date?: Date) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["agendamentos"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-agendamentos"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["agendamentos-semana"] });
+      queryClient.invalidateQueries({ queryKey: ["agendamentos-mes"] });
       toast.success("Agendamento atualizado com sucesso!");
     },
     onError: (error: Error) => {
