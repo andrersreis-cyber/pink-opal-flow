@@ -2,6 +2,23 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 
+// Função para converter timestamp "DD/MM/YYYY HH:MM" para ISO "YYYY-MM-DDTHH:MM:SS"
+const parseTimestamp = (timestamp: string): string => {
+  // Se vazio ou já está em formato ISO, retorna como está
+  if (!timestamp || timestamp.includes('T') || timestamp.match(/^\d{4}-\d{2}-\d{2}/)) {
+    return timestamp;
+  }
+  
+  // Parse formato "DD/MM/YYYY HH:MM"
+  const [datePart, timePart] = timestamp.split(' ');
+  if (!datePart || !timePart) return timestamp;
+  
+  const [day, month, year] = datePart.split('/');
+  if (!day || !month || !year) return timestamp;
+  
+  return `${year}-${month}-${day}T${timePart}:00`;
+};
+
 export interface ConversaGrupo {
   cliente_id: number | null;
   cliente_nome: string | null;
@@ -39,7 +56,7 @@ export const useConversas = () => {
           direcao: msg.sender === "client" ? "incoming" : "outgoing",
           mensagem_usuario: msg.sender === "client" ? msg.content : null,
           mensagem_bot: msg.sender === "bot" ? msg.content : null,
-          created_at: msg.timestamp || conv.last_message_date,
+          created_at: parseTimestamp(msg.timestamp || conv.last_message_date),
         }));
 
         return {
