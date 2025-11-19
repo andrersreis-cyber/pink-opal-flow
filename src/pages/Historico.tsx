@@ -6,16 +6,38 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useConversas } from "@/hooks/useConversas";
 import { ConversaCard } from "@/components/historico/ConversaCard";
 import { ConversaDetalhesModal } from "@/components/historico/ConversaDetalhesModal";
+import type { ConversationHistory } from "@/types";
 
 const Historico = () => {
-  const { conversas, isLoading, filtro, setFiltro } = useConversas();
-  const [conversaSelecionada, setConversaSelecionada] = useState<any>(null);
+  const { conversas, isLoading } = useConversas();
+  const [filtro, setFiltro] = useState("");
+  const [conversaSelecionada, setConversaSelecionada] = useState<ConversationHistory | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleCardClick = (conversa: any) => {
+  const handleCardClick = (conversa: ConversationHistory) => {
     setConversaSelecionada(conversa);
     setIsModalOpen(true);
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gradient">Histórico de Conversas</h1>
+          <p className="text-muted-foreground mt-2">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const conversasFiltradas = conversas?.filter((conversa) => {
+    if (!filtro) return true;
+    const searchTerm = filtro.toLowerCase();
+    return (
+      conversa.clientName?.toLowerCase().includes(searchTerm) ||
+      conversa.telefone?.toLowerCase().includes(searchTerm)
+    );
+  });
 
   return (
     <div className="space-y-8">
@@ -46,7 +68,7 @@ const Historico = () => {
                 <Skeleton key={i} className="h-40 w-full" />
               ))}
             </div>
-          ) : !conversas || conversas.length === 0 ? (
+          ) : !conversasFiltradas || conversasFiltradas.length === 0 ? (
             <div className="text-center py-12">
               <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">
@@ -55,7 +77,7 @@ const Historico = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {conversas.map((conversa) => (
+              {conversasFiltradas.map((conversa) => (
                 <ConversaCard
                   key={conversa.cliente_id || conversa.telefone}
                   conversa={conversa}
