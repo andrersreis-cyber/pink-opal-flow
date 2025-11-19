@@ -652,6 +652,10 @@ export type Database = {
         }[]
       }
       normalizar_telefone: { Args: { telefone_text: string }; Returns: string }
+      normalizar_telefone_busca: {
+        Args: { p_telefone: string }
+        Returns: string
+      }
       normalizar_telefone_insercao: {
         Args: { telefone_text: string }
         Returns: string
@@ -662,6 +666,14 @@ export type Database = {
           id: number
           nome: string
           telefone: string
+        }[]
+      }
+      remarcar_agendamento: {
+        Args: { p_agendamento_id: number; p_nova_data: string }
+        Returns: {
+          agendamento_id: number
+          erro: string
+          sucesso: boolean
         }[]
       }
       upsert_cliente_completo: {
