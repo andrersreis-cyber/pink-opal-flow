@@ -32,12 +32,15 @@ export const useConversas = () => {
       if (error) throw error;
 
       const grouped = (data || []).reduce((acc: Record<string, ConversaGrupo>, msg: any) => {
-        const key = (msg.cliente_id ?? msg.telefone ?? "sem-chave").toString();
+        // Normalizar telefone (remover @lid e outros sufixos)
+        const telefoneNormalizado = msg.telefone?.replace(/@.*$/, '') || 'sem-telefone';
+        const key = msg.cliente_id?.toString() || telefoneNormalizado;
+        
         if (!acc[key]) {
           acc[key] = {
             cliente_id: msg.cliente_id,
             cliente_nome: msg.cliente_nome || "Cliente sem nome",
-            telefone: msg.telefone,
+            telefone: telefoneNormalizado,
             mensagens: [],
             ultima_mensagem: msg.created_at,
             total_mensagens: 0,

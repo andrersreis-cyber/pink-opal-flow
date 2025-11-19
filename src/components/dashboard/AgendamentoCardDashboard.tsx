@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, User, Scissors } from "lucide-react";
-import { formatTimeUTC } from "@/lib/dateUtils";
+import { formatTimeLocal } from "@/lib/dateUtils";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -48,7 +48,7 @@ export const AgendamentoCardDashboard = ({
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span className="font-semibold text-base">
-                {formatTimeUTC(agendamento.data)}
+                {formatTimeLocal(agendamento.data)}
               </span>
               <Badge variant={urgente ? "default" : "outline"} className="text-xs">
                 {tempoRelativo}
