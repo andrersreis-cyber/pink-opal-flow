@@ -18,75 +18,39 @@ export const useConversas = () => {
     queryKey: ["conversas", filtro],
     queryFn: async () => {
       let query = supabase
-        .from("vw_conversas")
+        .from("vw_conversas_formatadas")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("last_message_date", { ascending: false });
 
       if (filtro) {
         query = query.or(
-          `cliente_nome.ilike.%${filtro}%,telefone.ilike.%${filtro}%`
+          `client_name.ilike.%${filtro}%,phone.ilike.%${filtro}%`
         );
       }
 
       const { data, error } = await query;
       if (error) throw error;
 
-      const grouped = (data || []).reduce((acc: Record<string, ConversaGrupo>, msg: any) => {
-        // Normalizar telefone (remover @lid e outros sufixos)
-        const telefoneNormalizado = msg.telefone?.replace(/@.*$/, '') || 'sem-telefone';
-        const key = msg.cliente_id?.toString() || telefoneNormalizado;
-        
-        if (!acc[key]) {
-          acc[key] = {
-            cliente_id: msg.cliente_id,
-            cliente_nome: msg.cliente_nome || "Cliente sem nome",
-            telefone: telefoneNormalizado,
-            mensagens: [],
-            ultima_mensagem: msg.created_at,
-            total_mensagens: 0,
-          };
-        }
+      // Mapear dados da view formatada para o formato esperado pelos componentes
+      return (data || []).map((conv: any) => {
+        // Mapear mensagens do formato da view para o formato dos componentes
+        const mensagens = (conv.messages || []).map((msg: any) => ({
+          id: msg.id,
+          direcao: msg.sender === "client" ? "incoming" : "outgoing",
+          mensagem_usuario: msg.sender === "client" ? msg.content : null,
+          mensagem_bot: msg.sender === "bot" ? msg.content : null,
+          created_at: msg.timestamp || conv.last_message_date,
+        }));
 
-        // Atualizar última mensagem
-        if (new Date(msg.created_at) > new Date(acc[key].ultima_mensagem)) {
-          acc[key].ultima_mensagem = msg.created_at;
-        }
-
-        // Desdobrar em até 2 mensagens: uma do cliente e uma do bot
-        // 1) Mensagem do cliente (se existir)
-        if (msg.mensagem_usuario) {
-          acc[key].mensagens.push({
-            ...msg,
-            direcao: "incoming",
-          });
-          acc[key].total_mensagens++;
-        }
-
-        // 2) Mensagem do bot (se existir)
-        if (msg.mensagem_bot) {
-          acc[key].mensagens.push({
-            ...msg,
-            direcao: "outgoing",
-          });
-          acc[key].total_mensagens++;
-        }
-
-        return acc;
-      }, {} as Record<string, ConversaGrupo>);
-
-      // Ordenar mensagens cronologicamente dentro de cada grupo
-      Object.values(grouped).forEach((grupo) => {
-        grupo.mensagens.sort(
-          (a: any, b: any) =>
-            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        );
+        return {
+          cliente_id: conv.client_id ? parseInt(conv.client_id) : null,
+          cliente_nome: conv.client_name || "Cliente sem nome",
+          telefone: conv.phone,
+          mensagens: mensagens,
+          ultima_mensagem: conv.last_message_date,
+          total_mensagens: mensagens.length,
+        };
       });
-
-      return Object.values(grouped).sort(
-        (a, b) =>
-          new Date(b.ultima_mensagem).getTime() -
-          new Date(a.ultima_mensagem).getTime()
-      );
     },
   });
 
