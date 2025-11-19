@@ -9,12 +9,14 @@ export const useAtividades = () => {
         .from("atividades_dashboard")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(10);
-      
+        .limit(5);
+
       if (error) throw error;
       return data;
     },
+    staleTime: 30_000,
   });
 
   return { atividades, isLoading };
 };
+
