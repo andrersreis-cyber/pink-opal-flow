@@ -4,44 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAgendamentos } from "@/hooks/useAgendamentos";
 import { AgendamentoModal } from "@/components/agendamentos/AgendamentoModal";
-import { AgendamentoCard } from "@/components/agendamentos/AgendamentoCard";
+import { AgendamentoCardDashboard } from "@/components/dashboard/AgendamentoCardDashboard";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
 
 const AgendaDia = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [agendamentoParaEditar, setAgendamentoParaEditar] = useState<any>(null);
-  const { agendamentos, isLoading, updateAgendamento } = useAgendamentos(selectedDate);
+  const { agendamentos, isLoading } = useAgendamentos(selectedDate);
 
-  const handleConfirmar = async (id: number) => {
-    try {
-      await updateAgendamento.mutateAsync({ id, status: 'confirmado' });
-      toast.success("Agendamento confirmado!");
-    } catch (error) {
-      console.error('Erro ao confirmar:', error);
-      toast.error("Erro ao confirmar agendamento");
-    }
-  };
-
-  const handleCancelar = async (id: number) => {
-    try {
-      await updateAgendamento.mutateAsync({ id, status: 'cancelado' });
-      toast.success("Agendamento cancelado!");
-    } catch (error) {
-      console.error('Erro ao cancelar:', error);
-      toast.error("Erro ao cancelar agendamento");
-    }
-  };
-
-  const handleRemarcar = (agendamento: any) => {
-    setAgendamentoParaEditar(agendamento);
-    setIsModalOpen(true);
-  };
-
-  const handleEditar = (agendamento: any) => {
+  const handleCardClick = (agendamento: any) => {
     setAgendamentoParaEditar(agendamento);
     setIsModalOpen(true);
   };
@@ -66,13 +40,13 @@ const AgendaDia = () => {
 
       <Card className="glass-card">
         <CardHeader>
-          <CardTitle>Horários</CardTitle>
+          <CardTitle>Horários do Dia</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} className="h-20 w-full" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <Skeleton key={i} className="h-32 w-full" />
               ))}
             </div>
           ) : agendamentos?.length === 0 ? (
@@ -81,16 +55,15 @@ const AgendaDia = () => {
               <p className="text-muted-foreground">Nenhum agendamento para este dia</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {agendamentos?.map((agendamento) => (
-                <AgendamentoCard
+                <div
                   key={agendamento.id}
-                  agendamento={agendamento}
-                  onConfirmar={handleConfirmar}
-                  onCancelar={handleCancelar}
-                  onRemarcar={handleRemarcar}
-                  onEditar={handleEditar}
-                />
+                  onClick={() => handleCardClick(agendamento)}
+                  className="cursor-pointer"
+                >
+                  <AgendamentoCardDashboard agendamento={agendamento} />
+                </div>
               ))}
             </div>
           )}

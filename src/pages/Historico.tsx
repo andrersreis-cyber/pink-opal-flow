@@ -1,23 +1,20 @@
 import { useState } from "react";
-import { MessageSquare, Search, ChevronDown, ChevronUp, Phone } from "lucide-react";
+import { MessageSquare, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useConversas } from "@/hooks/useConversas";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ConversaCard } from "@/components/historico/ConversaCard";
+import { ConversaDetalhesModal } from "@/components/historico/ConversaDetalhesModal";
 
 const Historico = () => {
   const { conversas, isLoading, filtro, setFiltro } = useConversas();
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [conversaSelecionada, setConversaSelecionada] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const toggleConversa = (key: string) => {
-    const next = new Set(expanded);
-    if (next.has(key)) next.delete(key);
-    else next.add(key);
-    setExpanded(next);
+  const handleCardClick = (conversa: any) => {
+    setConversaSelecionada(conversa);
+    setIsModalOpen(true);
   };
 
   return (
@@ -44,9 +41,9 @@ const Historico = () => {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-24 w-full" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <Skeleton key={i} className="h-40 w-full" />
               ))}
             </div>
           ) : !conversas || conversas.length === 0 ? (
@@ -57,95 +54,24 @@ const Historico = () => {
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {conversas.map((conversa) => {
-                const key = (conversa.cliente_id ?? conversa.telefone ?? "sem-chave").toString();
-                const isExpanded = expanded.has(key);
-
-                return (
-                  <Card key={key} className="bg-muted/30 border-0">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="font-semibold truncate">
-                              {conversa.cliente_nome}
-                            </h3>
-                            {conversa.telefone && (
-                              <Badge variant="outline" className="text-xs">
-                                <Phone className="h-3 w-3 mr-1" />
-                                {conversa.telefone}
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {conversa.total_mensagens} mensagem(ns)
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Última atividade: {" "}
-                            {formatDistanceToNow(new Date(conversa.ultima_mensagem), {
-                              addSuffix: true,
-                              locale: ptBR,
-                            })}
-                          </p>
-
-                          {isExpanded && (
-                            <div className="mt-4 space-y-3 border-t pt-3 max-h-64 overflow-y-auto">
-                              {conversa.mensagens.map((msg: any) => (
-                                <div
-                                  key={msg.id}
-                                  className={`p-3 rounded-lg text-sm ${
-                                    msg.direcao === "incoming"
-                                      ? "bg-primary/10 mr-8"
-                                      : "bg-muted ml-8"
-                                  }`}
-                                >
-                                  <div className="flex items-center justify-between mb-1">
-                                    <Badge
-                                      variant={
-                                        msg.direcao === "incoming" ? "default" : "secondary"
-                                      }
-                                      className="text-xs"
-                                    >
-                                      {msg.direcao === "incoming" ? "Cliente" : "Bot"}
-                                    </Badge>
-                                    <span className="text-xs text-muted-foreground">
-                                      {formatDistanceToNow(new Date(msg.created_at), {
-                                        addSuffix: true,
-                                        locale: ptBR,
-                                      })}
-                                    </span>
-                                  </div>
-                                  <p>
-                                    {msg.direcao === "incoming"
-                                      ? msg.mensagem_usuario
-                                      : msg.mensagem_bot}
-                                  </p>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleConversa(key)}
-                        >
-                          {isExpanded ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {conversas.map((conversa) => (
+                <ConversaCard
+                  key={conversa.cliente_id || conversa.telefone}
+                  conversa={conversa}
+                  onClick={() => handleCardClick(conversa)}
+                />
+              ))}
             </div>
           )}
         </CardContent>
       </Card>
+
+      <ConversaDetalhesModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        conversa={conversaSelecionada}
+      />
     </div>
   );
 };
