@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAgendamentos } from "@/hooks/useAgendamentos";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AgendamentoCard } from "@/components/agendamentos/AgendamentoCard";
 import { AgendamentoModal } from "@/components/agendamentos/AgendamentoModal";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { AgendamentoCardDashboard } from "./AgendamentoCardDashboard";
 
 export const ProximosAgendamentos = () => {
   const { agendamentos, isLoading, updateAgendamento } = useAgendamentos(new Date());
@@ -13,20 +14,20 @@ export const ProximosAgendamentos = () => {
 
   const handleConfirmar = async (id: number) => {
     try {
-      await updateAgendamento.mutateAsync({ id, status: 'confirmado' });
+      await updateAgendamento.mutateAsync({ id, status: "confirmado" });
       toast.success("Agendamento confirmado!");
     } catch (error) {
-      console.error('Erro ao confirmar:', error);
+      console.error("Erro ao confirmar:", error);
       toast.error("Erro ao confirmar agendamento");
     }
   };
 
   const handleCancelar = async (id: number) => {
     try {
-      await updateAgendamento.mutateAsync({ id, status: 'cancelado' });
+      await updateAgendamento.mutateAsync({ id, status: "cancelado" });
       toast.success("Agendamento cancelado!");
     } catch (error) {
-      console.error('Erro ao cancelar:', error);
+      console.error("Erro ao cancelar:", error);
       toast.error("Erro ao cancelar agendamento");
     }
   };
@@ -41,6 +42,13 @@ export const ProximosAgendamentos = () => {
     setIsModalOpen(true);
   };
 
+  const ativos =
+    agendamentos?.filter(
+      (a) => a.status === "confirmado" || a.status === "pendente"
+    ) ?? [];
+  const confirmados = ativos.filter((a) => a.status === "confirmado").length;
+  const pendentes = ativos.filter((a) => a.status === "pendente").length;
+
   if (isLoading) {
     return (
       <Card className="glass-card">
@@ -50,7 +58,7 @@ export const ProximosAgendamentos = () => {
         <CardContent>
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-16 w-full" />
+              <Skeleton key={i} className="h-24 w-full" />
             ))}
           </div>
         </CardContent>
@@ -62,24 +70,38 @@ export const ProximosAgendamentos = () => {
     <>
       <Card className="glass-card">
         <CardHeader>
-          <CardTitle>Próximos Agendamentos</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Próximos Agendamentos</CardTitle>
+            <div className="flex gap-2">
+              {confirmados > 0 && (
+                <Badge variant="outline" className="bg-success/10 text-success border-success/30">
+                  ✓ {confirmados}
+                </Badge>
+              )}
+              {pendentes > 0 && (
+                <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30">
+                  ⏰ {pendentes}
+                </Badge>
+              )}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {agendamentos?.length === 0 ? (
+            {ativos.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
-                Nenhum agendamento para hoje
+                Nenhum agendamento confirmado ou pendente para hoje
               </p>
             ) : (
-              agendamentos?.slice(0, 5).map((agendamento) => (
-                <AgendamentoCard
+              ativos.slice(0, 5).map((agendamento) => (
+                <button
                   key={agendamento.id}
-                  agendamento={agendamento}
-                  onConfirmar={handleConfirmar}
-                  onCancelar={handleCancelar}
-                  onRemarcar={handleRemarcar}
-                  onEditar={handleEditar}
-                />
+                  type="button"
+                  onClick={() => handleEditar(agendamento)}
+                  className="w-full text-left"
+                >
+                  <AgendamentoCardDashboard agendamento={agendamento} />
+                </button>
               ))
             )}
           </div>
@@ -97,3 +119,4 @@ export const ProximosAgendamentos = () => {
     </>
   );
 };
+
