@@ -46,13 +46,41 @@ export const useConversas = () => {
             total_mensagens: 0,
           };
         }
-        acc[key].mensagens.push(msg);
-        acc[key].total_mensagens++;
+
+        // Atualizar última mensagem
         if (new Date(msg.created_at) > new Date(acc[key].ultima_mensagem)) {
           acc[key].ultima_mensagem = msg.created_at;
         }
+
+        // Desdobrar em até 2 mensagens: uma do cliente e uma do bot
+        // 1) Mensagem do cliente (se existir)
+        if (msg.mensagem_usuario) {
+          acc[key].mensagens.push({
+            ...msg,
+            direcao: "incoming",
+          });
+          acc[key].total_mensagens++;
+        }
+
+        // 2) Mensagem do bot (se existir)
+        if (msg.mensagem_bot) {
+          acc[key].mensagens.push({
+            ...msg,
+            direcao: "outgoing",
+          });
+          acc[key].total_mensagens++;
+        }
+
         return acc;
       }, {} as Record<string, ConversaGrupo>);
+
+      // Ordenar mensagens cronologicamente dentro de cada grupo
+      Object.values(grouped).forEach((grupo) => {
+        grupo.mensagens.sort(
+          (a: any, b: any) =>
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+      });
 
       return Object.values(grouped).sort(
         (a, b) =>
