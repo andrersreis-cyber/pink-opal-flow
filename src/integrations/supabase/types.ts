@@ -326,21 +326,21 @@ export type Database = {
           cliente_id: number
           created_at: string
           id: number
-          mensagem: string
+          mensagem: string | null
           tipo: string
         }
         Insert: {
           cliente_id: number
           created_at?: string
           id?: number
-          mensagem: string
+          mensagem?: string | null
           tipo: string
         }
         Update: {
           cliente_id?: number
           created_at?: string
           id?: number
-          mensagem?: string
+          mensagem?: string | null
           tipo?: string
         }
         Relationships: [

@@ -67,8 +67,8 @@ export const ConversaDetalhesModal = ({
                 </div>
                 <p className="text-sm">
                   {msg.direcao === "incoming"
-                    ? msg.mensagem_usuario
-                    : msg.mensagem_bot}
+                    ? (msg.mensagem_usuario || "Mensagem sem conteúdo")
+                    : (msg.mensagem_bot || "Mensagem do sistema sem conteúdo")}
                 </p>
               </div>
             ))}
