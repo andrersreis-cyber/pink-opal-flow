@@ -2,6 +2,20 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { ConversationHistory } from "@/types";
 
+const parseBrazilianDate = (dateStr: string): Date => {
+  if (!dateStr) return new Date();
+  
+  // Se for ISO format (YYYY-MM-DD HH:MM)
+  if (dateStr.includes('-')) {
+    return new Date(dateStr.replace(' ', 'T'));
+  }
+  
+  // Se for formato brasileiro (DD/MM/YYYY HH:MM)
+  const [datePart, timePart] = dateStr.split(' ');
+  const [day, month, year] = datePart.split('/');
+  return new Date(`${year}-${month}-${day}T${timePart || '00:00'}:00`);
+};
+
 export const useConversas = () => {
   const { data: conversas, isLoading } = useQuery({
     queryKey: ["conversas"],
@@ -34,7 +48,16 @@ export const useConversas = () => {
         cliente_nome: conv.client_name || "Cliente sem nome",
         telefone: conv.phone,
         total_mensagens: (conv.messages || []).length,
-        ultima_mensagem: conv.last_message_date,
+        ultima_mensagem: conv.last_message_date 
+          ? parseBrazilianDate(conv.last_message_date).toISOString() 
+          : new Date().toISOString(),
+        mensagens: (conv.messages || []).map((msg: any) => ({
+          id: msg.id,
+          direcao: msg.sender === 'client' ? 'incoming' : 'outgoing',
+          mensagem_usuario: msg.sender === 'client' ? msg.content : '',
+          mensagem_bot: msg.sender === 'bot' || msg.sender === 'system' ? msg.content : '',
+          created_at: parseBrazilianDate(msg.timestamp),
+        })),
       })) as ConversationHistory[];
     },
   });
