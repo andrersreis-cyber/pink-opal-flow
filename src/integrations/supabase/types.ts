@@ -557,6 +557,19 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_conversas_formatadas: {
+        Row: {
+          client_id: string | null
+          client_name: string | null
+          id: string | null
+          last_message: string | null
+          last_message_date: string | null
+          messages: Json | null
+          phone: string | null
+          status: string | null
+        }
+        Relationships: []
+      }
       vw_estatisticas_dia: {
         Row: {
           cancelados: number | null
@@ -609,6 +622,13 @@ export type Database = {
           id: string
           nome: string
           preco: number
+        }[]
+      }
+      cancelar_agendamento: {
+        Args: { p_agendamento_id: number }
+        Returns: {
+          mensagem: string
+          sucesso: boolean
         }[]
       }
       criar_agendamento_validado: {
