@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,13 +34,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useClientes } from "@/hooks/useClientes";
 import { useServicos } from "@/hooks/useServicos";
 import { useAgendamentos } from "@/hooks/useAgendamentos";
-import { gerarHorarios, criarDataHora, verificarConflito, formatTimeUTC } from "@/lib/dateUtils";
+import { gerarHorarios, criarDataHora, formatTimeUTC } from "@/lib/dateUtils";
 import { formatarPreco } from "@/lib/formatUtils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { verificarDisponibilidadeRemota } from "@/services/agendamentoService";
 
 const agendamentoSchema = z.object({
   cliente_id: z.number({
@@ -73,7 +75,6 @@ export const AgendamentoModal = ({
   const { clientes } = useClientes();
   const { servicosPorCategoria, servicos } = useServicos();
   const { createAgendamento, updateAgendamento } = useAgendamentos();
-  const { agendamentos: todosAgendamentos } = useAgendamentos();
   const [servicoSelecionado, setServicoSelecionado] = useState<any>(null);
   const isEditing = !!agendamento;
 
@@ -130,20 +131,56 @@ export const AgendamentoModal = ({
 
       // Verificar conflito de horário
       const dataStr = format(data.data, "yyyy-MM-dd");
-      const hasConflito = verificarConflito(
-        dataStr,
-        data.hora,
-        servicoSelecionado.duracao_minutos,
-        todosAgendamentos || [],
-        agendamento?.id
-      );
+      const dataHoraInicio = new Date(criarDataHora(dataStr, data.hora));
+      const dataHoraFim = new Date(dataHoraInicio.getTime() + servicoSelecionado.duracao_minutos * 60000);
 
-      if (hasConflito) {
+      // 1. Validação Local (Defesa em Profundidade)
+      // Buscar agendamentos do dia específico para garantir que não houve race condition ou falha na RPC
+      // Usamos UTC para garantir consistência com o banco
+      const startOfDay = new Date(dataHoraInicio);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(dataHoraInicio);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+
+      const { data: agendamentosDoDia } = await supabase
+        .from("vw_agendamentos_completos")
+        .select("*")
+        .gte("data", startOfDay.toISOString())
+        .lte("data", endOfDay.toISOString());
+
+      const temConflitoLocal = agendamentosDoDia?.some((ag) => {
+        // Ignorar o próprio agendamento na edição
+        if (agendamento?.id && ag.id === agendamento.id) return false;
+        // Ignorar cancelados
+        if (ag.status === "cancelado") return false;
+
+        const agInicio = new Date(ag.data!);
+        const agFim = new Date(agInicio.getTime() + (ag.duracao_minutos || 0) * 60000);
+
+        // Lógica de Overlap: (StartA < EndB) AND (EndA > StartB)
+        return dataHoraInicio < agFim && dataHoraFim > agInicio;
+      });
+
+      if (temConflitoLocal) {
+        toast.error("Este horário já está ocupado.");
+        return;
+      }
+
+      // 2. Validação Remota (RPC)
+      // Mantemos como dupla verificação para garantir consistência com o n8n
+      const { disponivel } = await verificarDisponibilidadeRemota({
+        dataInicio: dataHoraInicio,
+        dataFim: dataHoraFim,
+        ignorarAgendamentoId: agendamento?.id
+      });
+
+      if (!disponivel) {
         toast.error("Este horário já está ocupado. Por favor, escolha outro horário.");
         return;
       }
 
-      const dataHoraISO = criarDataHora(dataStr, data.hora);
+      // Importante: criarDataHora já retorna ISO string, mas vamos garantir
+      const dataHoraISO = dataHoraInicio.toISOString();
 
       const agendamentoData = {
         cliente_id: data.cliente_id,

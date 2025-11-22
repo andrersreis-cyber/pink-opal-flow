@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -6,6 +7,31 @@ import { getTodayUTC } from "@/lib/dateUtils";
 
 export const useAgendamentos = (date?: Date) => {
   const queryClient = useQueryClient();
+
+  // Configurar Realtime Subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('public:agendamentos')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'agendamentos' },
+        (payload) => {
+          console.log('Mudança em agendamentos detectada (Realtime):', payload);
+          
+          // Invalidar todas as queries relacionadas a agendamentos
+          queryClient.invalidateQueries({ queryKey: ["agendamentos"] });
+          queryClient.invalidateQueries({ queryKey: ["dashboard-agendamentos"] });
+          queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+          queryClient.invalidateQueries({ queryKey: ["agendamentos-semana"] });
+          queryClient.invalidateQueries({ queryKey: ["agendamentos-mes"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const { data: agendamentos, isLoading } = useQuery({
     queryKey: ["agendamentos", date ? format(date, "yyyy-MM-dd") : "all"],
