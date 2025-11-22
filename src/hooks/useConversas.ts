@@ -5,7 +5,12 @@ import type { ConversationHistory } from "@/types";
 const parseBrazilianDate = (dateStr: string): Date => {
   if (!dateStr) return new Date();
   
-  // Se for ISO format (YYYY-MM-DD HH:MM)
+  // Se for ISO format completo com T (ex: 2025-11-22T15:00:00Z)
+  if (dateStr.includes('T')) {
+    return new Date(dateStr);
+  }
+
+  // Se for formato SQL timestamp simples (YYYY-MM-DD HH:MM)
   if (dateStr.includes('-')) {
     return new Date(dateStr.replace(' ', 'T'));
   }
