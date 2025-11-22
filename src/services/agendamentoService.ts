@@ -22,21 +22,16 @@ export const verificarDisponibilidadeRemota = async ({
   ignorarAgendamentoId
 }: VerificarDisponibilidadeParams): Promise<ResultadoDisponibilidade> => {
   
-  // Formatar datas para ISO com timezone correto (o backend espera string)
+  // Formatar datas para ISO (a função original espera TEXT)
   const p_data_inicio = dataInicio.toISOString();
   const p_data_fim = dataFim.toISOString();
 
-  console.log("Verificando disponibilidade (RPC):", { 
-    p_data_inicio, 
-    p_data_fim, 
-    p_ignorar_agendamento_id: ignorarAgendamentoId 
-  });
+  console.log("Verificando disponibilidade (RPC):", { p_data_inicio, p_data_fim });
 
-  // Chamar RPC passando todos os parâmetros
+  // Chamar RPC (função original que estava funcionando com o n8n)
   const { data, error } = await supabase.rpc('verificar_disponibilidade', {
     p_data_inicio,
-    p_data_fim,
-    p_ignorar_agendamento_id: ignorarAgendamentoId || null
+    p_data_fim
   });
 
   if (error) {
@@ -44,20 +39,21 @@ export const verificarDisponibilidadeRemota = async ({
     throw error;
   }
 
-  // A RPC com RETURNS TABLE retorna um array com um objeto
-  // Formato: [{ disponivel: boolean, conflitos: [...] }]
+  // A função retorna: { verificar_disponibilidade: { disponivel: boolean, conflitos: [...] } }
   console.log("Resposta da RPC:", data);
   
-  if (!data || !Array.isArray(data) || data.length === 0) {
-    console.error("Resposta inválida da RPC:", data);
-    return { disponivel: false, conflitos: [] };
+  // Extrair o objeto aninhado
+  const resultado = data?.verificar_disponibilidade || data || { disponivel: false, conflitos: [] };
+  
+  // Filtrar o agendamento atual se estivermos editando (validação local)
+  let conflitos = resultado.conflitos || [];
+  if (ignorarAgendamentoId && Array.isArray(conflitos) && conflitos.length > 0) {
+    conflitos = conflitos.filter((c: any) => c.id !== ignorarAgendamentoId);
   }
-
-  const resultado = data[0];
   
   return {
-    disponivel: resultado.disponivel,
-    conflitos: resultado.conflitos || []
+    disponivel: conflitos.length === 0,
+    conflitos
   };
 };
 
