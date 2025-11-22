@@ -23,15 +23,20 @@ export const verificarDisponibilidadeRemota = async ({
 }: VerificarDisponibilidadeParams): Promise<ResultadoDisponibilidade> => {
   
   // Formatar datas para ISO com timezone correto (o backend espera string)
-  // Importante: A RPC espera formato ISO 8601
   const p_data_inicio = dataInicio.toISOString();
   const p_data_fim = dataFim.toISOString();
 
-  console.log("Verificando disponibilidade (RPC):", { p_data_inicio, p_data_fim });
+  console.log("Verificando disponibilidade (RPC):", { 
+    p_data_inicio, 
+    p_data_fim, 
+    p_ignorar_agendamento_id: ignorarAgendamentoId 
+  });
 
+  // Chamar RPC passando todos os parâmetros
   const { data, error } = await supabase.rpc('verificar_disponibilidade', {
     p_data_inicio,
-    p_data_fim
+    p_data_fim,
+    p_ignorar_agendamento_id: ignorarAgendamentoId || null
   });
 
   if (error) {
@@ -39,21 +44,19 @@ export const verificarDisponibilidadeRemota = async ({
     throw error;
   }
 
-  // A RPC retorna { disponivel: boolean, conflitos: [...] }
-  // Precisamos filtrar o agendamento atual se estivermos editando
-  let conflitos = data.conflitos || [];
+  // O Supabase retorna o JSONB como um objeto aninhado
+  // Formato: { verificar_disponibilidade: { disponivel: boolean, conflitos: [...] } }
+  // Ou quando é uma função que retorna jsonb, vem direto como objeto
+  console.log("Resposta da RPC:", data);
   
-  if (ignorarAgendamentoId && conflitos.length > 0) {
-    conflitos = conflitos.filter((c: any) => c.id !== ignorarAgendamentoId);
-    // Se removemos todos os conflitos (era só ele mesmo), então está disponível
-    if (conflitos.length === 0) {
-      return { disponivel: true, conflitos: [] };
-    }
-  }
+  // Extrair o resultado (pode vir aninhado ou direto)
+  const resultado = typeof data === 'object' && data !== null 
+    ? (data.disponivel !== undefined ? data : data.verificar_disponibilidade || data)
+    : { disponivel: false, conflitos: [] };
 
   return {
-    disponivel: conflitos.length === 0,
-    conflitos
+    disponivel: resultado.disponivel,
+    conflitos: resultado.conflitos || []
   };
 };
 
