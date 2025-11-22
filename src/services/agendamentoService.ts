@@ -44,16 +44,17 @@ export const verificarDisponibilidadeRemota = async ({
     throw error;
   }
 
-  // O Supabase retorna o JSONB como um objeto aninhado
-  // Formato: { verificar_disponibilidade: { disponivel: boolean, conflitos: [...] } }
-  // Ou quando é uma função que retorna jsonb, vem direto como objeto
+  // A RPC com RETURNS TABLE retorna um array com um objeto
+  // Formato: [{ disponivel: boolean, conflitos: [...] }]
   console.log("Resposta da RPC:", data);
   
-  // Extrair o resultado (pode vir aninhado ou direto)
-  const resultado = typeof data === 'object' && data !== null 
-    ? (data.disponivel !== undefined ? data : data.verificar_disponibilidade || data)
-    : { disponivel: false, conflitos: [] };
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    console.error("Resposta inválida da RPC:", data);
+    return { disponivel: false, conflitos: [] };
+  }
 
+  const resultado = data[0];
+  
   return {
     disponivel: resultado.disponivel,
     conflitos: resultado.conflitos || []
