@@ -6,6 +6,7 @@ import { useAgendamentosSemana } from "@/hooks/useAgendamentosSemana";
 import { useAgendamentos } from "@/hooks/useAgendamentos";
 import { AgendamentoModal } from "@/components/agendamentos/AgendamentoModal";
 import { AgendamentoCardCompact } from "@/components/agendamentos/AgendamentoCardCompact";
+import { FuncionarioFilter } from "@/components/agendamentos/FuncionarioFilter";
 import { format, addWeeks, subWeeks, isSameDay, startOfWeek, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,11 +15,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 const AgendaSemana = () => {
   const [selectedWeek, setSelectedWeek] = useState(new Date());
+  const [funcionarioFiltro, setFuncionarioFiltro] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [agendamentoParaEditar, setAgendamentoParaEditar] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   
-  const { agendamentos, isLoading, inicioSemana, fimSemana } = useAgendamentosSemana(selectedWeek);
+  const { agendamentos, isLoading, inicioSemana, fimSemana } = useAgendamentosSemana(selectedWeek, funcionarioFiltro);
   const { updateAgendamento } = useAgendamentos();
 
   // Gerar array com os 7 dias da semana
@@ -78,7 +80,13 @@ const AgendaSemana = () => {
           </p>
         </div>
         
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-3 items-center">
+          {/* Filtro de Funcionário (só para admin) */}
+          <FuncionarioFilter 
+            value={funcionarioFiltro}
+            onChange={setFuncionarioFiltro}
+          />
+
           <Button
             variant="outline"
             size="icon"

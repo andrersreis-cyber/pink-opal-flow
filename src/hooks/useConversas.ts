@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { ConversationHistory } from "@/types";
 
@@ -22,6 +23,28 @@ const parseBrazilianDate = (dateStr: string): Date => {
 };
 
 export const useConversas = () => {
+  const queryClient = useQueryClient();
+
+  // Configurar Realtime Subscription para atualizar conversas
+  useEffect(() => {
+    const channel = supabase
+      .channel('n8n_chat_histories_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'n8n_chat_histories' },
+        (payload) => {
+          console.log('Nova mensagem n8n detectada:', payload);
+          // Invalidar cache para buscar novas conversas
+          queryClient.invalidateQueries({ queryKey: ["conversas"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   const { data: conversas, isLoading } = useQuery({
     queryKey: ["conversas"],
     queryFn: async () => {
