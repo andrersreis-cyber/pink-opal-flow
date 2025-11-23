@@ -34,6 +34,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useClientes } from "@/hooks/useClientes";
 import { useServicos } from "@/hooks/useServicos";
 import { useAgendamentos } from "@/hooks/useAgendamentos";
+import { useAuth } from "@/hooks/useAuth";
+import { useUsuarios } from "@/hooks/useUsuarios";
 import { gerarHorarios, criarDataHora, formatTimeUTC } from "@/lib/dateUtils";
 import { formatarPreco } from "@/lib/formatUtils";
 import { format } from "date-fns";
@@ -49,6 +51,7 @@ const agendamentoSchema = z.object({
     invalid_type_error: "Cliente inválido"
   }).positive("Selecione um cliente"),
   servico_id: z.string().min(1, "Selecione um serviço"),
+  funcionario_id: z.string().uuid("Selecione um funcionário").optional(),
   data: z.date({ required_error: "Selecione uma data" }),
   hora: z.string().regex(/^\d{2}:\d{2}$/, "Selecione um horário"),
   status: z.enum(["confirmado", "pendente", "cancelado", "remarcado"]),
@@ -75,6 +78,8 @@ export const AgendamentoModal = ({
   const { clientes } = useClientes();
   const { servicosPorCategoria, servicos } = useServicos();
   const { createAgendamento, updateAgendamento } = useAgendamentos();
+  const { profile, isAdmin } = useAuth();
+  const { usuarios } = useUsuarios();
   const [servicoSelecionado, setServicoSelecionado] = useState<any>(null);
   const isEditing = !!agendamento;
 
@@ -83,6 +88,7 @@ export const AgendamentoModal = ({
     defaultValues: {
       cliente_id: clienteIdInicial || undefined,
       servico_id: "",
+      funcionario_id: isAdmin ? undefined : profile?.id,
       data: dataInicial || new Date(),
       hora: "",
       status: "pendente",
@@ -96,6 +102,7 @@ export const AgendamentoModal = ({
       form.reset({
         cliente_id: agendamento.cliente_id,
         servico_id: agendamento.servico_id,
+        funcionario_id: agendamento.funcionario_id,
         data: dataAgendamento,
         hora: formatTimeUTC(agendamento.data),
         status: agendamento.status,
@@ -185,6 +192,7 @@ export const AgendamentoModal = ({
       const agendamentoData = {
         cliente_id: data.cliente_id,
         servico_id: data.servico_id,
+        funcionario_id: data.funcionario_id || profile?.id,
         data: dataHoraISO,
         duracao_minutos: servicoSelecionado.duracao_minutos,
         preco: servicoSelecionado.preco,
@@ -197,6 +205,7 @@ export const AgendamentoModal = ({
           id: agendamento.id,
           data: dataHoraISO,
           status: data.status,
+          funcionario_id: data.funcionario_id || profile?.id,
           observacoes: data.observacoes,
         });
       } else {
@@ -296,6 +305,35 @@ export const AgendamentoModal = ({
                             ))}
                           </div>
                         ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="funcionario_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Funcionário Responsável {isAdmin && '*'}</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value || profile?.id}
+                    disabled={!isAdmin}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={isAdmin ? "Selecione um funcionário" : profile?.nome} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {usuarios?.filter(u => u.ativo).map((usuario) => (
+                        <SelectItem key={usuario.id} value={usuario.id}>
+                          {usuario.nome} {usuario.role === 'admin' && '(Admin)'}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
