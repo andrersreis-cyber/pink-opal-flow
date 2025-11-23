@@ -12,6 +12,7 @@ import AgendaSemana from "./pages/AgendaSemana";
 import AgendaMes from "./pages/AgendaMes";
 import Clientes from "./pages/Clientes";
 import Historico from "./pages/Historico";
+import Usuarios from "./pages/Usuarios";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -41,6 +42,15 @@ const App = () => (
                       <Route path="/agenda/mes" element={<AgendaMes />} />
                       <Route path="/clientes" element={<Clientes />} />
                       <Route path="/historico" element={<Historico />} />
+                      {/* Rota de Equipe - protegida para admin */}
+                      <Route 
+                        path="/equipe" 
+                        element={
+                          <ProtectedRoute requireAdmin>
+                            <Usuarios />
+                          </ProtectedRoute>
+                        } 
+                      />
                       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                       <Route path="*" element={<NotFound />} />
                     </Routes>
