@@ -2,14 +2,17 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, Mail, Shield, ShieldCheck, UserX, Loader2 } from 'lucide-react';
+import { UserPlus, Mail, Shield, ShieldCheck, UserX, Loader2, Settings } from 'lucide-react';
 import { useUsuarios } from '@/hooks/useUsuarios';
 import { UserModal } from '@/components/usuarios/UserModal';
+import { ServicosModal } from '@/components/usuarios/ServicosModal';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export default function Usuarios() {
   const [modalOpen, setModalOpen] = useState(false);
+  const [servicosModalOpen, setServicosModalOpen] = useState(false);
+  const [funcionarioSelecionado, setFuncionarioSelecionado] = useState<{ id: string; nome: string } | null>(null);
   const { usuarios, isLoading, criarUsuario, isCriando, desativarUsuario } = useUsuarios();
 
   const handleCriarUsuario = (dados: { email: string; senha: string; nome: string; role: 'admin' | 'funcionario' }) => {
@@ -18,6 +21,11 @@ export default function Usuarios() {
         setModalOpen(false);
       },
     });
+  };
+
+  const handleAbrirServicos = (id: string, nome: string) => {
+    setFuncionarioSelecionado({ id, nome });
+    setServicosModalOpen(true);
   };
 
   if (isLoading) {
@@ -88,16 +96,32 @@ export default function Usuarios() {
                 </p>
               )}
 
-              {usuario.ativo && usuario.role !== 'admin' && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="w-full mt-2"
-                  onClick={() => desativarUsuario(usuario.id)}
-                >
-                  <UserX className="mr-2 h-4 w-4" />
-                  Desativar
-                </Button>
+              {usuario.ativo && (
+                <div className="space-y-2 mt-2">
+                  {/* Botão Gerenciar Serviços */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => handleAbrirServicos(usuario.id, usuario.nome)}
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    Gerenciar Serviços
+                  </Button>
+
+                  {/* Botão Desativar (apenas para funcionários) */}
+                  {usuario.role !== 'admin' && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => desativarUsuario(usuario.id)}
+                    >
+                      <UserX className="mr-2 h-4 w-4" />
+                      Desativar
+                    </Button>
+                  )}
+                </div>
               )}
             </CardContent>
           </Card>
@@ -127,6 +151,16 @@ export default function Usuarios() {
         onSubmit={handleCriarUsuario}
         isLoading={isCriando}
       />
+
+      {/* Modal de Gestão de Serviços */}
+      {funcionarioSelecionado && (
+        <ServicosModal
+          open={servicosModalOpen}
+          onOpenChange={setServicosModalOpen}
+          funcionarioId={funcionarioSelecionado.id}
+          funcionarioNome={funcionarioSelecionado.nome}
+        />
+      )}
     </div>
   );
 }

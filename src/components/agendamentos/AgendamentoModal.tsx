@@ -36,6 +36,7 @@ import { useServicos } from "@/hooks/useServicos";
 import { useAgendamentos } from "@/hooks/useAgendamentos";
 import { useAuth } from "@/hooks/useAuth";
 import { useUsuarios } from "@/hooks/useUsuarios";
+import { useFuncionariosPorServico } from "@/hooks/useFuncionariosPorServico";
 import { gerarHorarios, criarDataHora, formatTimeUTC } from "@/lib/dateUtils";
 import { formatarPreco } from "@/lib/formatUtils";
 import { format } from "date-fns";
@@ -81,6 +82,8 @@ export const AgendamentoModal = ({
   const { profile, isAdmin } = useAuth();
   const { usuarios } = useUsuarios();
   const [servicoSelecionado, setServicoSelecionado] = useState<any>(null);
+  const [servicoIdSelecionado, setServicoIdSelecionado] = useState<string | undefined>();
+  const { data: funcionariosHabilitados } = useFuncionariosPorServico(servicoIdSelecionado);
   const isEditing = !!agendamento;
 
   const form = useForm<AgendamentoFormData>({
@@ -224,7 +227,12 @@ export const AgendamentoModal = ({
   const handleServicoChange = (servicoId: string) => {
     const servico = servicos?.find((s) => s.id === servicoId);
     setServicoSelecionado(servico);
+    setServicoIdSelecionado(servicoId);
     form.setValue("servico_id", servicoId);
+    // Limpar funcionário selecionado quando mudar o serviço
+    if (isAdmin) {
+      form.setValue("funcionario_id", undefined);
+    }
   };
 
   const horarios = gerarHorarios();
@@ -329,11 +337,28 @@ export const AgendamentoModal = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {usuarios?.filter(u => u.ativo).map((usuario) => (
-                        <SelectItem key={usuario.id} value={usuario.id}>
-                          {usuario.nome} {usuario.role === 'admin' && '(Admin)'}
-                        </SelectItem>
-                      ))}
+                      {isAdmin && servicoIdSelecionado && funcionariosHabilitados ? (
+                        // Se admin e serviço selecionado: mostrar apenas funcionários habilitados
+                        funcionariosHabilitados.length > 0 ? (
+                          funcionariosHabilitados.map((func) => (
+                            <SelectItem key={func.funcionario_id} value={func.funcionario_id}>
+                              {func.funcionario_nome}
+                              {func.nivel_habilidade === 'avancado' && ' ⭐ (Avançado)'}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                            Nenhum profissional habilitado para este serviço
+                          </div>
+                        )
+                      ) : (
+                        // Se não admin ou serviço não selecionado: mostrar todos
+                        usuarios?.filter(u => u.ativo).map((usuario) => (
+                          <SelectItem key={usuario.id} value={usuario.id}>
+                            {usuario.nome} {usuario.role === 'admin' && '(Admin)'}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
