@@ -150,7 +150,7 @@ export const AgendamentoModal = ({
       endOfDay.setUTCHours(23, 59, 59, 999);
 
       const { data: agendamentosDoDia } = await supabase
-        .from("vw_agendamentos_completos")
+        .from("agendamentos")
         .select("*")
         .gte("data", startOfDay.toISOString())
         .lte("data", endOfDay.toISOString());

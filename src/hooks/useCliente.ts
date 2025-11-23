@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { buildAgendamentosQuery, transformAgendamento } from "@/lib/agendamentosQuery";
 
 export const useCliente = (clienteId: number | null) => {
   const { data: cliente, isLoading } = useQuery({
@@ -24,14 +25,12 @@ export const useCliente = (clienteId: number | null) => {
     queryFn: async () => {
       if (!clienteId) return [];
       
-      const { data, error } = await supabase
-        .from("vw_agendamentos_completos")
-        .select("*")
+      const { data, error } = await buildAgendamentosQuery()
         .eq("cliente_id", clienteId)
         .order("data", { ascending: false });
       
       if (error) throw error;
-      return data;
+      return data?.map(transformAgendamento) || [];
     },
     enabled: !!clienteId,
   });

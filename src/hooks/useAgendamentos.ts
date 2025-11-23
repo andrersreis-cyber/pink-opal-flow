@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { getTodayUTC } from "@/lib/dateUtils";
+import { buildAgendamentosQuery, transformAgendamento } from "@/lib/agendamentosQuery";
 
-export const useAgendamentos = (date?: Date) => {
+export const useAgendamentos = (date?: Date, funcionarioId?: string | null) => {
   const queryClient = useQueryClient();
 
   // Configurar Realtime Subscription
@@ -34,12 +35,10 @@ export const useAgendamentos = (date?: Date) => {
   }, [queryClient]);
 
   const { data: agendamentos, isLoading } = useQuery({
-    queryKey: ["agendamentos", date ? format(date, "yyyy-MM-dd") : "all"],
+    queryKey: ["agendamentos", date ? format(date, "yyyy-MM-dd") : "all", funcionarioId],
     queryFn: async () => {
-      let query = supabase
-        .from("vw_agendamentos_completos")
-        .select("*")
-        .order("data", { ascending: true });
+      // Buscar direto da tabela agendamentos com JOINs para respeitar RLS
+      let query = buildAgendamentosQuery().order("data", { ascending: true });
       
       if (date) {
         // Extrair componentes UTC do objeto Date
@@ -55,11 +54,18 @@ export const useAgendamentos = (date?: Date) => {
           .gte("data", startOfDay.toISOString())
           .lte("data", endOfDay.toISOString());
       }
+
+      // Aplicar filtro de funcionário se selecionado
+      if (funcionarioId) {
+        query = query.eq("funcionario_id", funcionarioId);
+      }
       
       const { data, error } = await query;
       
       if (error) throw error;
-      return data;
+      
+      // Transformar para o formato esperado
+      return data?.map(transformAgendamento) || [];
     },
   });
 

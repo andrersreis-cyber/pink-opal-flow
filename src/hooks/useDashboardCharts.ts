@@ -30,8 +30,13 @@ export const useDashboardCharts = () => {
     queryKey: ["dashboard-servicos"],
     queryFn: async () => {
       const result = await supabase
-        .from("vw_agendamentos_completos")
-        .select("servico_nome, servico_categoria, preco")
+        .from("agendamentos")
+        .select(`
+          preco,
+          status,
+          data,
+          servico:servicos(nome, categoria)
+        `)
         .eq("status", "confirmado")
         .gte("data", format(subDays(new Date(), 30), "yyyy-MM-dd"));
       
@@ -39,9 +44,9 @@ export const useDashboardCharts = () => {
       
       // Agrupar manualmente
       const grouped = result.data.reduce((acc, item) => {
-        const key = item.servico_nome || "Sem nome";
+        const key = item.servico?.nome || "Sem nome";
         if (!acc[key]) {
-          acc[key] = { nome: key, categoria: item.servico_categoria, total: 0, receita: 0 };
+          acc[key] = { nome: key, categoria: item.servico?.categoria, total: 0, receita: 0 };
         }
         acc[key].total += 1;
         acc[key].receita += Number(item.preco || 0);

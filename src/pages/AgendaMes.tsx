@@ -7,6 +7,7 @@ import { useAgendamentosMes } from "@/hooks/useAgendamentosMes";
 import { useAgendamentos } from "@/hooks/useAgendamentos";
 import { AgendamentoModal } from "@/components/agendamentos/AgendamentoModal";
 import { StatsDetailModal } from "@/components/dashboard/StatsDetailModal";
+import { FuncionarioFilter } from "@/components/agendamentos/FuncionarioFilter";
 import { 
   format, 
   addMonths, 
@@ -25,12 +26,13 @@ import { toast } from "sonner";
 
 const AgendaMes = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [funcionarioFiltro, setFuncionarioFiltro] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDayModalOpen, setIsDayModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [agendamentoParaEditar, setAgendamentoParaEditar] = useState<any>(null);
   
-  const { agendamentos, isLoading, inicioMes, fimMes } = useAgendamentosMes(selectedMonth);
+  const { agendamentos, isLoading, inicioMes, fimMes } = useAgendamentosMes(selectedMonth, funcionarioFiltro);
   const { updateAgendamento } = useAgendamentos();
 
   // Gerar array de dias para o calendário (incluindo dias do mês anterior/posterior)
@@ -107,7 +109,13 @@ const AgendaMes = () => {
           </p>
         </div>
         
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-3 items-center">
+          {/* Filtro de Funcionário (só para admin) */}
+          <FuncionarioFilter 
+            value={funcionarioFiltro}
+            onChange={setFuncionarioFiltro}
+          />
+
           <Button
             variant="outline"
             size="icon"
