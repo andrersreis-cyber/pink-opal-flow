@@ -26,16 +26,37 @@ export function useUsuarios() {
   // Criar novo funcionário
   const criarUsuario = useMutation({
     mutationFn: async (dados: { email: string; senha: string; nome: string; role: 'admin' | 'funcionario' }) => {
-      // TEMPORÁRIO: Criação manual via Supabase Dashboard
-      // TODO: Implementar Edge Function com service_role para criar usuários programaticamente
+      // Chamar Edge Function para criar usuário
+      const { data: { session } } = await supabase.auth.getSession();
       
-      throw new Error(
-        'Criação de usuários pelo frontend não está disponível. ' +
-        'Por favor, crie o usuário manualmente no Supabase Dashboard: ' +
-        'Authentication > Users > Add user. ' +
-        `Email: ${dados.email}, Senha: ${dados.senha}. ` +
-        'Depois, o sistema criará automaticamente o perfil.'
+      if (!session) {
+        throw new Error('Sessão não encontrada');
+      }
+
+      const response = await fetch(
+        `${supabase.supabaseUrl}/functions/v1/create-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: dados.email,
+            password: dados.senha,
+            nome: dados.nome,
+            role: dados.role,
+          }),
+        }
       );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erro ao criar usuário');
+      }
+
+      return result.user;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['usuarios'] });
@@ -43,9 +64,7 @@ export function useUsuarios() {
     },
     onError: (error: any) => {
       console.error('Erro ao criar funcionário:', error);
-      toast.error(error.message || 'Erro ao criar funcionário', {
-        duration: 10000,
-      });
+      toast.error(error.message || 'Erro ao criar funcionário');
     },
   });
 
