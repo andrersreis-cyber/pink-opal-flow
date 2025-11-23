@@ -74,30 +74,28 @@ Você deve ver algo como:
 Execute este script para validar tudo:
 
 ```sql
--- Verificar estrutura criada
+-- Verificar se admin foi criado
 SELECT 
-  'Tabela profiles' as validacao,
-  COUNT(*) as registros
-FROM profiles
-UNION ALL
-SELECT 
-  'Coluna funcionario_id em agendamentos',
-  COUNT(*)
+  email, nome, role, ativo 
+FROM profiles 
+WHERE role = 'admin';
+
+-- Verificar coluna funcionario_id existe
+SELECT column_name, data_type 
 FROM information_schema.columns 
 WHERE table_name = 'agendamentos' 
-  AND column_name = 'funcionario_id'
-UNION ALL
-SELECT 
-  'Policies criadas',
-  COUNT(*)::text
+  AND column_name = 'funcionario_id';
+
+-- Verificar policies criadas
+SELECT COUNT(*) as total_policies
 FROM pg_policies 
 WHERE tablename IN ('profiles', 'agendamentos');
 ```
 
 **Resultado Esperado:**
-- Tabela profiles: 1 registro
-- Coluna funcionario_id: 1 (existe)
-- Policies criadas: 14 (todas configuradas)
+- Admin existe com email `admin@pinkopal.dev`
+- Coluna `funcionario_id` tipo `uuid`
+- Total policies: 14
 
 ---
 

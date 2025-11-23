@@ -1,7 +1,12 @@
-import { Calendar, CalendarDays, CalendarRange, Home, Users, History, Sparkles } from "lucide-react";
+import { Calendar, CalendarDays, CalendarRange, Home, Users, History, Sparkles, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export const Sidebar = () => {
+  const { profile, signOut } = useAuth();
+
   const navItems = [
     { to: "/", icon: Home, label: "Dashboard" },
     { to: "/agenda/dia", icon: Calendar, label: "Agenda Dia" },
@@ -10,6 +15,16 @@ export const Sidebar = () => {
     { to: "/clientes", icon: Users, label: "Clientes" },
     { to: "/historico", icon: History, label: "Histórico" },
   ];
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success('Logout realizado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      toast.error('Erro ao fazer logout');
+    }
+  };
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 glass-card border-r border-border/50">
@@ -20,9 +35,13 @@ export const Sidebar = () => {
             <div className="p-2 rounded-lg gradient-pink-purple">
               <Sparkles className="h-6 w-6 text-white" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">Liz Martins</h1>
-              <p className="text-xs text-muted-foreground">Estética Avançada</p>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-bold text-foreground truncate">
+                {profile?.nome || 'Pink Opal Flow'}
+              </h1>
+              <p className="text-xs text-muted-foreground truncate">
+                {profile?.role === 'admin' ? 'Administradora' : 'Estética Avançada'}
+              </p>
             </div>
           </div>
         </div>
@@ -42,6 +61,18 @@ export const Sidebar = () => {
             </NavLink>
           ))}
         </nav>
+
+        {/* Logout Button */}
+        <div className="p-4 border-t border-border/50">
+          <Button
+            onClick={handleLogout}
+            variant="ghost"
+            className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          >
+            <LogOut className="h-5 w-5" />
+            <span className="font-medium">Sair</span>
+          </Button>
+        </div>
       </div>
     </aside>
   );
