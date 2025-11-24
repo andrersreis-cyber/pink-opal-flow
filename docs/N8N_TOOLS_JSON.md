@@ -4,6 +4,38 @@
 
 ---
 
+## ⚠️ IMPORTANTE: Expressões do N8N
+
+As expressões variam dependendo de como você está usando os tools:
+
+### **Opção 1: Tool do AI Agent** (RECOMENDADO)
+Use `$fromAI('nome_parametro')`:
+```json
+{
+  "p_servico_id": "={{ $fromAI('servico_id') }}"
+}
+```
+
+### **Opção 2: HTTP Request Node normal**
+Use `$json.nome_parametro`:
+```json
+{
+  "p_servico_id": "={{ $json.servico_id }}"
+}
+```
+
+### **Opção 3: Com parâmetros do node**
+Use `$parameter.nome_parametro`:
+```json
+{
+  "p_servico_id": "={{ $parameter.servico_id }}"
+}
+```
+
+**📸 Pelas suas screenshots, você está usando AI Agent Tools, então use `$fromAI()`!**
+
+---
+
 ## TOOL 1: listar_funcionarios_por_servico
 
 ### Tool Description (campo de texto):
@@ -36,7 +68,14 @@ Lista funcionários habilitados para executar um serviço específico. SEMPRE us
 **JSON Body:**
 ```json
 {
-  "p_servico_id": "={{ $parameter.servico_id }}"
+  "p_servico_id": "={{ $json.servico_id }}"
+}
+```
+
+**IMPORTANTE:** Se estiver usando como Tool do AI Agent, use:
+```json
+{
+  "p_servico_id": "={{ $fromAI('servico_id') }}"
 }
 ```
 
@@ -68,7 +107,14 @@ Busca o último funcionário que atendeu um cliente. Use para oferecer continuid
 **JSON Body:**
 ```json
 {
-  "p_telefone": "={{ $parameter.telefone }}"
+  "p_telefone": "={{ $json.telefone }}"
+}
+```
+
+**IMPORTANTE:** Se estiver usando como Tool do AI Agent, use:
+```json
+{
+  "p_telefone": "={{ $fromAI('telefone') }}"
 }
 ```
 
@@ -84,9 +130,18 @@ Verifica disponibilidade de funcionários. OPCIONALMENTE filtra por serviço (re
 ### JSON Body (ATUALIZAR - adicionar servico_id):
 ```json
 {
-  "p_data_inicio": "={{ $parameter.data_inicio }}",
-  "p_data_fim": "={{ $parameter.data_fim }}",
-  "p_servico_id": "={{ $parameter.servico_id || null }}"
+  "p_data_inicio": "={{ $json.data_inicio }}",
+  "p_data_fim": "={{ $json.data_fim }}",
+  "p_servico_id": "={{ $json.servico_id || null }}"
+}
+```
+
+**IMPORTANTE:** Se estiver usando como Tool do AI Agent, use:
+```json
+{
+  "p_data_inicio": "={{ $fromAI('data_inicio') }}",
+  "p_data_fim": "={{ $fromAI('data_fim') }}",
+  "p_servico_id": "={{ $fromAI('servico_id') || null }}"
 }
 ```
 
@@ -97,11 +152,22 @@ Verifica disponibilidade de funcionários. OPCIONALMENTE filtra por serviço (re
 ### JSON Body (ATUALIZAR - adicionar funcionario_id):
 ```json
 {
-  "p_cliente_id": "={{ $parameter.cliente_id }}",
-  "p_servico_id": "={{ $parameter.servico_id }}",
-  "p_data": "={{ $parameter.data }}",
-  "p_observacoes": "={{ $parameter.observacoes || '' }}",
-  "p_funcionario_id": "={{ $parameter.funcionario_id }}"
+  "p_cliente_id": "={{ $json.cliente_id }}",
+  "p_servico_id": "={{ $json.servico_id }}",
+  "p_data": "={{ $json.data }}",
+  "p_observacoes": "={{ $json.observacoes || '' }}",
+  "p_funcionario_id": "={{ $json.funcionario_id }}"
+}
+```
+
+**IMPORTANTE:** Se estiver usando como Tool do AI Agent, use:
+```json
+{
+  "p_cliente_id": "={{ $fromAI('cliente_id') }}",
+  "p_servico_id": "={{ $fromAI('servico_id') }}",
+  "p_data": "={{ $fromAI('data') }}",
+  "p_observacoes": "={{ $fromAI('observacoes') || '' }}",
+  "p_funcionario_id": "={{ $fromAI('funcionario_id') }}"
 }
 ```
 
