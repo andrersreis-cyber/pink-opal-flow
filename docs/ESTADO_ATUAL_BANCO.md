@@ -159,3 +159,4 @@ supabase/scripts/cleanup-orphan-triggers.sql
 
 **🎯 Pronto para começar? Execute `investigation.sql` e me mostre os resultados!**
 
+

@@ -57,3 +57,4 @@ $$;
 -- Comentário: Esta função tem limitações pois não pode criar usuários no auth.users
 -- Solução recomendada: Criar uma Edge Function com service_role key
 
+

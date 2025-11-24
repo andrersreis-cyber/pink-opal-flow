@@ -181,3 +181,4 @@ FROM pg_policies
 WHERE tablename = 'agendamentos'
 ORDER BY roles, cmd, policyname;
 
+

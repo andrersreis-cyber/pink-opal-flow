@@ -449,3 +449,4 @@ Esperado: RPC retorna erro, agente sugere alternativa
 
 **Próximo:** Configure os tools no N8N e atualize o System Prompt! 🚀
 
+

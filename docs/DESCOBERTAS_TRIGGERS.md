@@ -220,3 +220,4 @@ DROP TABLE IF EXISTS mensagens CASCADE;
 
 **Execute `complete-audit.sql` para revelar toda a verdade!** 🔍
 
+

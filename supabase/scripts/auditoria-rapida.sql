@@ -147,3 +147,4 @@ SELECT
   '✅ AUDITORIA CONCLUÍDA' as status,
   NOW() AT TIME ZONE 'America/Sao_Paulo' as data_hora_brasilia;
 
+

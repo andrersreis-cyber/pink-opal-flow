@@ -80,3 +80,4 @@ SELECT
   'ativo' AS status
 FROM conversas_agrupadas;
 
+

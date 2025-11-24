@@ -36,3 +36,4 @@ export const FuncionarioFilter = ({ value, onChange }: FuncionarioFilterProps) =
   );
 };
 
+

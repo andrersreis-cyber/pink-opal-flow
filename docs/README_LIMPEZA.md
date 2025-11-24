@@ -124,3 +124,4 @@ Para instruções detalhadas passo a passo com troubleshooting:
 
 **🤖 Pronto para começar? Siga o `GUIA_EXECUCAO_LIMPEZA.md`!**
 
+

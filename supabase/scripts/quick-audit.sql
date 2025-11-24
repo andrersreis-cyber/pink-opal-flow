@@ -65,3 +65,4 @@ WHERE table_schema = 'public'
 -- RESULTADO: Você saberá o que falta criar
 -- =====================================================
 
+

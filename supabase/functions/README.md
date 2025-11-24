@@ -70,3 +70,4 @@ curl -i --location --request POST \
 4. Edge Function cria/atualiza profile em profiles
 5. Retorna sucesso para o frontend
 
+

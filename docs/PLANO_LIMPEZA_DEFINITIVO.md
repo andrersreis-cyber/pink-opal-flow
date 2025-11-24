@@ -277,3 +277,4 @@ supabase/scripts/investigation.sql
 
 **Com essas informações, saberemos EXATAMENTE o que remover!** 🔍
 
+

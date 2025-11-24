@@ -308,3 +308,4 @@ ALTER SEQUENCE funcionario_servicos_id_seq RESTART WITH 1;
 
 **Banco de dados auditado e pronto para limpeza!** 🧹
 
+

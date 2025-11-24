@@ -159,3 +159,4 @@ pnpm run dev
 - `docs/ESTADO_ATUAL_BANCO.md` - Status do banco
 - `docs/GUIA_EXECUCAO_LIMPEZA.md` - Guia de limpeza (não aplicado)
 
+

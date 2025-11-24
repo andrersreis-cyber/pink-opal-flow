@@ -44,3 +44,4 @@ ORDER BY tablename, cmd;
 -- ✅ 14 policies criadas (profiles + agendamentos)
 -- ✅ RLS habilitado em profiles e agendamentos
 
+

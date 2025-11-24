@@ -248,3 +248,4 @@ Quer marcar outro serviço com ela em outro horário ou prefere mudar de profiss
 
 **Pronto! Agora o agente tem melhor contexto, memória e não confunde mais os clientes!** 🧠✨
 
+

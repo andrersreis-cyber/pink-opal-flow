@@ -260,3 +260,4 @@ obter_cliente_id_por_telefone
 
 **Pronto! Agora o n8n aceita QUALQUER formato de telefone!** 📞✅
 
+

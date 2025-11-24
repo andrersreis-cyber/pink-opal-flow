@@ -259,3 +259,4 @@ GRANT EXECUTE ON FUNCTION obter_ultimo_funcionario_cliente TO anon, authenticate
 GRANT EXECUTE ON FUNCTION verificar_disponibilidade_por_funcionario TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION criar_agendamento_validado TO anon, authenticated;
 
+

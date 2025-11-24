@@ -15,3 +15,4 @@ ALTER TABLE servicos DISABLE ROW LEVEL SECURITY;
 -- 2. Use (auth.jwt() ->> 'user_role')::text instead of querying profiles table
 -- 3. Re-enable RLS with corrected policies
 
+

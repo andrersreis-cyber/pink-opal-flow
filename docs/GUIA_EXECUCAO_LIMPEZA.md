@@ -296,3 +296,4 @@ WHERE schemaname = 'public';
 
 **Alguma dúvida? Execute passo a passo e me avise em caso de erro!** 🚀
 
+

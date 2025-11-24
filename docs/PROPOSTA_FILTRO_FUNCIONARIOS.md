@@ -368,3 +368,4 @@ const funcionarioCores: Record<string, string> = {
 
 **Aprova essa proposta? Posso começar a implementar?** 🎯✨
 
+

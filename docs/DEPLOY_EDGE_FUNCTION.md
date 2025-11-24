@@ -226,3 +226,4 @@ Se encontrar problemas:
 
 **A Edge Function está pronta para uso!** 🚀
 
+

@@ -59,3 +59,4 @@ export const transformAgendamento = (ag: any): AgendamentoCompleto => ({
   funcionario_email: ag.funcionario?.email,
 });
 
+

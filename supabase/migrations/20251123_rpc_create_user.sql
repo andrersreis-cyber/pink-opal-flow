@@ -83,3 +83,4 @@ $$;
 -- Comentário sobre limitação
 COMMENT ON FUNCTION rpc_create_user IS 'Função RPC para criar usuários. LIMITAÇÃO: Não pode criar em auth.users diretamente. Use Edge Function ou Dashboard manual.';
 
+

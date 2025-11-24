@@ -191,3 +191,4 @@ CREATE POLICY "temp_full_access"
 **Branch:** versao5  
 **Marco:** Marco 4 - Integração n8n Inteligente
 
+
