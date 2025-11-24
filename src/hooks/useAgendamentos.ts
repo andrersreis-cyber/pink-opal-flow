@@ -73,6 +73,7 @@ export const useAgendamentos = (date?: Date, funcionarioId?: string | null) => {
     mutationFn: async (newAgendamento: {
       cliente_id: number;
       servico_id: string;
+      funcionario_id?: string;
       data: string;
       duracao_minutos: number;
       preco: number;

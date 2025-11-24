@@ -2,17 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-interface FuncionarioServico {
-  id: number;
-  funcionario_id: string;
-  servico_id: string;
-  ativo: boolean;
-  nivel_habilidade: "basico" | "avancado";
-  observacoes?: string;
-  created_at: string;
-  updated_at: string;
-}
-
 interface ServicoComVinculo {
   servico_id: string;
   servico_nome: string;
@@ -20,19 +9,16 @@ interface ServicoComVinculo {
   servico_duracao: number;
   vinculado: boolean;
   nivel_habilidade?: "basico" | "avancado";
-  funcionario_servico_id?: number;
 }
 
-export const useFuncionarioServicos = (funcionarioId?: string) => {
+export const useFuncionarioServicos = (funcionarioId: string) => {
   const queryClient = useQueryClient();
 
-  // Buscar todos os serviços com status de vínculo para um funcionário
+  // Query: Listar todos os serviços com status de vínculo
   const { data: servicosComVinculo, isLoading: isLoadingServicos } = useQuery({
     queryKey: ["funcionario-servicos", funcionarioId],
     queryFn: async () => {
-      if (!funcionarioId) return [];
-
-      // Buscar todos os serviços ativos
+      // 1. Buscar todos os serviços ativos
       const { data: todosServicos, error: errorServicos } = await supabase
         .from("servicos")
         .select("id, nome, preco, duracao_minutos")
@@ -41,94 +27,81 @@ export const useFuncionarioServicos = (funcionarioId?: string) => {
 
       if (errorServicos) throw errorServicos;
 
-      // Buscar vínculos do funcionário
-      const { data: vinculos, error: errorVinculos } = await supabase
+      // 2. Buscar serviços vinculados ao funcionário
+      const { data: servicosVinculados, error: errorVinculados } = await supabase
         .from("funcionario_servicos")
-        .select("*")
-        .eq("funcionario_id", funcionarioId);
+        .select("servico_id, nivel_habilidade")
+        .eq("funcionario_id", funcionarioId)
+        .eq("ativo", true);
 
-      if (errorVinculos) throw errorVinculos;
+      if (errorVinculados) throw errorVinculados;
 
-      // Combinar dados
-      const servicosComStatus: ServicoComVinculo[] = todosServicos.map((servico) => {
-        const vinculo = vinculos?.find((v) => v.servico_id === servico.id);
-        return {
-          servico_id: servico.id,
-          servico_nome: servico.nome,
-          servico_preco: servico.preco,
-          servico_duracao: servico.duracao_minutos,
-          vinculado: vinculo?.ativo ?? false,
-          nivel_habilidade: vinculo?.nivel_habilidade ?? "basico",
-          funcionario_servico_id: vinculo?.id,
-        };
-      });
+      // 3. Criar mapa de vínculos
+      const vinculosMap = new Map(
+        servicosVinculados?.map((v) => [v.servico_id, v.nivel_habilidade]) || []
+      );
 
-      return servicosComStatus;
+      // 4. Combinar informações
+      const resultado: ServicoComVinculo[] = todosServicos?.map((servico) => ({
+        servico_id: servico.id,
+        servico_nome: servico.nome,
+        servico_preco: Number(servico.preco),
+        servico_duracao: servico.duracao_minutos,
+        vinculado: vinculosMap.has(servico.id),
+        nivel_habilidade: vinculosMap.get(servico.id),
+      })) || [];
+
+      return resultado;
     },
     enabled: !!funcionarioId,
   });
 
-  // Vincular serviço ao funcionário
-  const vincularServico = useMutation({
-    mutationFn: async ({
-      funcionarioId,
-      servicoId,
-      nivelHabilidade = "basico",
-    }: {
-      funcionarioId: string;
-      servicoId: string;
-      nivelHabilidade?: "basico" | "avancado";
-    }) => {
-      const { data, error } = await supabase
-        .from("funcionario_servicos")
-        .upsert({
-          funcionario_id: funcionarioId,
-          servico_id: servicoId,
-          ativo: true,
-          nivel_habilidade: nivelHabilidade,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["funcionario-servicos"] });
-      toast.success("Serviço vinculado com sucesso!");
-    },
-    onError: (error: any) => {
-      toast.error(`Erro ao vincular serviço: ${error.message}`);
-    },
-  });
-
-  // Desvincular serviço do funcionário
-  const desvincularServico = useMutation({
-    mutationFn: async ({
-      funcionarioId,
-      servicoId,
-    }: {
-      funcionarioId: string;
-      servicoId: string;
-    }) => {
+  // Mutation: Vincular/Desvincular serviço
+  const toggleServico = async (
+    funcionarioId: string,
+    servicoId: string,
+    vinculado: boolean,
+    nivelHabilidade: "basico" | "avancado" = "basico"
+  ) => {
+    if (vinculado) {
+      // Desvincular (DELETE ou UPDATE ativo=false)
       const { error } = await supabase
         .from("funcionario_servicos")
-        .update({ ativo: false })
+        .delete()
         .eq("funcionario_id", funcionarioId)
         .eq("servico_id", servicoId);
 
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["funcionario-servicos"] });
-      toast.success("Serviço desvinculado com sucesso!");
-    },
-    onError: (error: any) => {
-      toast.error(`Erro ao desvincular serviço: ${error.message}`);
-    },
-  });
+      if (error) {
+        toast.error("Erro ao desvincular serviço: " + error.message);
+        throw error;
+      }
 
-  // Atualizar nível de habilidade
+      toast.success("Serviço desvinculado com sucesso!");
+    } else {
+      // Vincular (INSERT)
+      const { error } = await supabase
+        .from("funcionario_servicos")
+        .insert({
+          funcionario_id: funcionarioId,
+          servico_id: servicoId,
+          nivel_habilidade: nivelHabilidade,
+          ativo: true,
+        });
+
+      if (error) {
+        toast.error("Erro ao vincular serviço: " + error.message);
+        throw error;
+      }
+
+      toast.success("Serviço vinculado com sucesso!");
+    }
+
+    // Invalidar queries para atualizar UI
+    queryClient.invalidateQueries({ queryKey: ["funcionario-servicos", funcionarioId] });
+    queryClient.invalidateQueries({ queryKey: ["funcionarios-por-servico"] });
+  };
+
+  // Mutation: Atualizar nível de habilidade
   const atualizarNivelHabilidade = useMutation({
     mutationFn: async ({
       funcionarioId,
@@ -147,38 +120,22 @@ export const useFuncionarioServicos = (funcionarioId?: string) => {
 
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["funcionario-servicos"] });
+    onSuccess: (_, variables) => {
       toast.success("Nível de habilidade atualizado!");
+      queryClient.invalidateQueries({ 
+        queryKey: ["funcionario-servicos", variables.funcionarioId] 
+      });
+      queryClient.invalidateQueries({ queryKey: ["funcionarios-por-servico"] });
     },
-    onError: (error: any) => {
-      toast.error(`Erro ao atualizar nível: ${error.message}`);
+    onError: (error: Error) => {
+      toast.error("Erro ao atualizar nível: " + error.message);
     },
   });
-
-  // Toggle serviço (ativa/desativa)
-  const toggleServico = async (
-    funcionarioId: string,
-    servicoId: string,
-    vinculado: boolean,
-    nivelHabilidade: "basico" | "avancado" = "basico"
-  ) => {
-    if (vinculado) {
-      // Desvincular
-      await desvincularServico.mutateAsync({ funcionarioId, servicoId });
-    } else {
-      // Vincular
-      await vincularServico.mutateAsync({ funcionarioId, servicoId, nivelHabilidade });
-    }
-  };
 
   return {
     servicosComVinculo,
     isLoadingServicos,
-    vincularServico,
-    desvincularServico,
-    atualizarNivelHabilidade,
     toggleServico,
+    atualizarNivelHabilidade,
   };
 };
-

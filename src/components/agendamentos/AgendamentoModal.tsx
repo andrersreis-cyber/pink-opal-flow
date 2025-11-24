@@ -41,7 +41,7 @@ import { gerarHorarios, criarDataHora, formatTimeUTC } from "@/lib/dateUtils";
 import { formatarPreco } from "@/lib/formatUtils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, Award, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { verificarDisponibilidadeRemota } from "@/services/agendamentoService";
@@ -342,8 +342,20 @@ export const AgendamentoModal = ({
                         funcionariosHabilitados.length > 0 ? (
                           funcionariosHabilitados.map((func) => (
                             <SelectItem key={func.funcionario_id} value={func.funcionario_id}>
-                              {func.funcionario_nome}
-                              {func.nivel_habilidade === 'avancado' && ' ⭐ (Avançado)'}
+                              <div className="flex items-center gap-2">
+                                <span>{func.funcionario_nome}</span>
+                                {func.nivel_habilidade === 'avancado' ? (
+                                  <span className="flex items-center gap-1 text-xs text-amber-600 font-medium">
+                                    <Award className="h-3 w-3" />
+                                    Avançado
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center gap-1 text-xs text-blue-600 font-medium">
+                                    <Star className="h-3 w-3" />
+                                    Básico
+                                  </span>
+                                )}
+                              </div>
                             </SelectItem>
                           ))
                         ) : (
