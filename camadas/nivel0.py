@@ -1,22 +1,20 @@
 """
 Nível 0 — Sem camada de segurança.
 
-O modelo recebe o prompt diretamente, sem nenhum system prompt,
-sem filtros de entrada ou saída. Comportamento bruto do LLM.
-
-Objetivo científico: observar o comportamento base do modelo
-sem qualquer intervenção externa de segurança.
+Modelo bruto sem nenhum system prompt, filtros ou restrições.
+Mantém histórico de conversa entre turnos.
 """
 
 from core.ollama_client import chat
 from core.logger import registrar
 
 
-def executar(prompt: str) -> str:
-    messages = [
-        {"role": "user", "content": prompt}
-    ]
+def executar(prompt: str, historico: list = None) -> tuple[str, list]:
+    historico = historico or []
 
+    messages = historico + [{"role": "user", "content": prompt}]
     resposta = chat(messages)
+
+    historico_atualizado = messages + [{"role": "assistant", "content": resposta}]
     registrar(nivel=0, prompt=prompt, resposta=resposta, bloqueado=False)
-    return resposta
+    return resposta, historico_atualizado

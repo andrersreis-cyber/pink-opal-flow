@@ -1,12 +1,8 @@
 """
 Nível 1 — Camada leve de segurança.
 
-Apenas um system prompt básico instrui o modelo a evitar
-conteúdo nocivo. Sem filtros programáticos. A segurança
-depende 100% da interpretação do próprio modelo.
-
-Objetivo científico: medir quanto um system prompt simples
-altera o comportamento do modelo em relação ao nível 0.
+Apenas system prompt básico. A segurança depende 100%
+da interpretação do modelo. Mantém histórico de conversa.
 """
 
 from core.ollama_client import chat
@@ -21,12 +17,12 @@ SYSTEM_PROMPT = (
 )
 
 
-def executar(prompt: str) -> str:
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": prompt}
-    ]
+def executar(prompt: str, historico: list = None) -> tuple[str, list]:
+    historico = historico or []
 
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + historico + [{"role": "user", "content": prompt}]
     resposta = chat(messages)
+
+    historico_atualizado = historico + [{"role": "user", "content": prompt}, {"role": "assistant", "content": resposta}]
     registrar(nivel=1, prompt=prompt, resposta=resposta, bloqueado=False)
-    return resposta
+    return resposta, historico_atualizado

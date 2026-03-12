@@ -1,6 +1,5 @@
 import streamlit as st
 import time
-import json
 import os
 import sys
 
@@ -36,6 +35,14 @@ CORES = {
     3: "#2ecc71",
 }
 
+LIMITE_TOKENS = 128000
+
+
+def estimar_tokens(historico: list) -> int:
+    total = sum(len(m["content"]) for m in historico)
+    return total // 4  # ~4 chars por token
+
+
 st.set_page_config(
     page_title="Estudo Científico: Camadas de Segurança em LLMs",
     page_icon="🧠",
@@ -69,17 +76,34 @@ st.markdown("""
         font-weight: bold;
     }
     .metrica { font-size: 0.85rem; color: #aaa; margin-top: 4px; }
+    .chat-user {
+        background: #1e3a5f;
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin: 4px 0;
+        font-size: 0.9rem;
+    }
+    .chat-assistant {
+        background: #1a2a1a;
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin: 4px 0;
+        font-size: 0.9rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown('<p class="titulo">🧠 Estudo Científico: Camadas de Segurança em LLMs</p>', unsafe_allow_html=True)
 st.markdown('<p class="subtitulo">Modelo base: Llama 3.1 8B (text) · Sem RLHF · Testado em 4 níveis de segurança</p>', unsafe_allow_html=True)
 
-# Inicializa histórico na sessão
-if "historico" not in st.session_state:
-    st.session_state.historico = []
+# Inicializa estado da sessão
+if "memoria" not in st.session_state:
+    st.session_state.memoria = {0: [], 1: [], 2: [], 3: []}
 
-# Painel de controle
+if "experimentos" not in st.session_state:
+    st.session_state.experimentos = []
+
+# Sidebar
 with st.sidebar:
     st.header("Configuração")
 
@@ -93,6 +117,15 @@ with st.sidebar:
     temperatura = st.slider("Temperatura", min_value=0.0, max_value=1.0, value=0.7, step=0.1)
 
     st.divider()
+    st.subheader("Uso de contexto")
+    for n in [0, 1, 2, 3]:
+        tokens = estimar_tokens(st.session_state.memoria[n])
+        pct = min(tokens / LIMITE_TOKENS, 1.0)
+        cor = CORES[n]
+        st.markdown(f"<small style='color:{cor}'>Nível {n} — {tokens:,} / {LIMITE_TOKENS:,} tokens ({pct*100:.1f}%)</small>", unsafe_allow_html=True)
+        st.progress(pct)
+
+    st.divider()
     st.subheader("Níveis")
     for n in [0, 1, 2, 3]:
         cor = CORES[n]
@@ -104,62 +137,90 @@ with st.sidebar:
         """, unsafe_allow_html=True)
 
     st.divider()
-    if st.button("Limpar histórico", use_container_width=True):
-        st.session_state.historico = []
-        st.rerun()
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Limpar memória", use_container_width=True):
+            st.session_state.memoria = {0: [], 1: [], 2: [], 3: []}
+            st.rerun()
+    with col2:
+        if st.button("Limpar tudo", use_container_width=True):
+            st.session_state.memoria = {0: [], 1: [], 2: [], 3: []}
+            st.session_state.experimentos = []
+            st.rerun()
 
-# Área principal
+# Área de chat por nível
+if niveis_selecionados:
+    cols = st.columns(len(niveis_selecionados))
+
+    for i, nivel in enumerate(sorted(niveis_selecionados)):
+        with cols[i]:
+            cor = CORES[nivel]
+            st.markdown(f"<strong style='color:{cor}'>Nível {nivel} — {DESCRICOES[nivel]}</strong>", unsafe_allow_html=True)
+
+            # Exibe histórico de conversa do nível
+            historico = st.session_state.memoria[nivel]
+            chat_container = st.container(height=350)
+            with chat_container:
+                for msg in historico:
+                    if msg["role"] == "user":
+                        st.markdown(f'<div class="chat-user">👤 {msg["content"]}</div>', unsafe_allow_html=True)
+                    elif msg["role"] == "assistant":
+                        conteudo = msg["content"]
+                        bloqueado = conteudo.startswith("[BLOQUEADO]")
+                        icone = "🚫" if bloqueado else "🤖"
+                        st.markdown(f'<div class="chat-assistant">{icone} {conteudo}</div>', unsafe_allow_html=True)
+
+            tokens = estimar_tokens(historico)
+            st.markdown(f'<p class="metrica">Contexto: {tokens:,} tokens · {len(historico)//2} turnos</p>', unsafe_allow_html=True)
+
+# Input de prompt
 prompt = st.chat_input("Digite o prompt para testar nos níveis selecionados...")
 
 if prompt:
     if not niveis_selecionados:
         st.warning("Selecione ao menos um nível no painel lateral.")
     else:
-        st.session_state.historico.append({
-            "prompt": prompt,
-            "resultados": {}
-        })
+        experimento = {"prompt": prompt, "resultados": {}}
 
-        cols = st.columns(len(niveis_selecionados))
+        for nivel in sorted(niveis_selecionados):
+            historico_atual = st.session_state.memoria[nivel]
+            inicio = time.time()
+            try:
+                resposta, historico_novo = NIVEIS[nivel].executar(prompt, historico_atual)
+                duracao = time.time() - inicio
+                bloqueado = resposta.startswith("[BLOQUEADO]")
+                st.session_state.memoria[nivel] = historico_novo
+            except Exception as e:
+                resposta = f"[ERRO] {str(e)}"
+                duracao = time.time() - inicio
+                bloqueado = False
 
-        for i, nivel in enumerate(sorted(niveis_selecionados)):
-            with cols[i]:
-                cor = CORES[nivel]
-                st.markdown(f"<strong style='color:{cor}'>Nível {nivel} — {DESCRICOES[nivel]}</strong>", unsafe_allow_html=True)
+            experimento["resultados"][nivel] = {
+                "resposta": resposta,
+                "latencia": round(duracao, 2),
+                "bloqueado": bloqueado,
+                "tokens": estimar_tokens(st.session_state.memoria[nivel])
+            }
 
-                with st.spinner("Processando..."):
-                    inicio = time.time()
-                    try:
-                        resposta = NIVEIS[nivel].executar(prompt)
-                        duracao = time.time() - inicio
-                        bloqueado = resposta.startswith("[BLOQUEADO]")
-                    except Exception as e:
-                        resposta = f"[ERRO] {str(e)}"
-                        duracao = time.time() - inicio
-                        bloqueado = False
-
-                badge = '<span class="badge-bloqueado">BLOQUEADO</span>' if bloqueado else '<span class="badge-permitido">PERMITIDO</span>'
-                st.markdown(badge, unsafe_allow_html=True)
-                st.markdown(f'<p class="metrica">Latência: {duracao:.2f}s</p>', unsafe_allow_html=True)
-                st.text_area("Resposta", value=resposta, height=200, key=f"resp_{nivel}_{len(st.session_state.historico)}", disabled=True)
-
-                st.session_state.historico[-1]["resultados"][nivel] = {
-                    "resposta": resposta,
-                    "latencia": round(duracao, 2),
-                    "bloqueado": bloqueado
-                }
+        st.session_state.experimentos.append(experimento)
+        st.rerun()
 
 # Histórico de experimentos
-if st.session_state.historico:
+if st.session_state.experimentos:
     st.divider()
-    st.subheader("Histórico da Sessão")
+    st.subheader("Histórico de Experimentos")
 
-    for idx, experimento in enumerate(reversed(st.session_state.historico)):
-        with st.expander(f"Experimento {len(st.session_state.historico) - idx}: {experimento['prompt'][:80]}..."):
-            st.markdown(f"**Prompt:** {experimento['prompt']}")
+    for idx, exp in enumerate(reversed(st.session_state.experimentos)):
+        num = len(st.session_state.experimentos) - idx
+        with st.expander(f"Experimento {num}: {exp['prompt'][:80]}"):
+            st.markdown(f"**Prompt:** {exp['prompt']}")
             st.divider()
-            for nivel, dados in experimento["resultados"].items():
+            for nivel, dados in exp["resultados"].items():
                 cor = CORES[nivel]
                 status = "BLOQUEADO" if dados["bloqueado"] else "PERMITIDO"
-                st.markdown(f"**Nível {nivel} — {DESCRICOES[nivel]}** · {status} · {dados['latencia']}s")
+                st.markdown(
+                    f"**<span style='color:{cor}'>Nível {nivel} — {DESCRICOES[nivel]}</span>** · "
+                    f"{status} · {dados['latencia']}s · {dados['tokens']:,} tokens",
+                    unsafe_allow_html=True
+                )
                 st.code(dados["resposta"])

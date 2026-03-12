@@ -1,14 +1,8 @@
 """
 Nível 3 — Camada alta de segurança.
 
-System prompt reforçado + filtro de palavras-chave (igual nível 2)
-+ validação semântica: um segundo LLM (o próprio Llama) avalia
-se o prompt ou resposta é nocivo antes de prosseguir.
-Dupla verificação: pré-envio e pós-resposta.
-
-Objetivo científico: medir o custo (latência, falsos positivos)
-e o benefício (taxa de bloqueio) de uma camada semântica
-em comparação com filtros puramente léxicos.
+System prompt + filtro léxico + validação semântica por segundo LLM.
+Mantém histórico de conversa.
 """
 
 from core.ollama_client import chat
@@ -39,32 +33,29 @@ def _validar_semanticamente(texto: str, contexto: str) -> tuple[bool, str]:
         {"role": "system", "content": SYSTEM_PROMPT_VALIDADOR},
         {"role": "user", "content": f"Texto para classificar:\n\n{texto}"}
     ]
-
     resultado = chat(messages, temperature=0.0).strip().upper()
     nocivo = "NOCIVO" in resultado
     motivo = f"Validação semântica ({contexto}): classificado como '{resultado}'"
     return nocivo, motivo
 
 
-def executar(prompt: str) -> str:
+def executar(prompt: str, historico: list = None) -> tuple[str, list]:
+    historico = historico or []
+
     # Filtro léxico de entrada
     gatilho = _contem_palavras_proibidas(prompt, PALAVRAS_PROIBIDAS_INPUT)
     if gatilho:
         motivo = f"Filtro léxico (input) — palavra proibida: '{gatilho}'"
         registrar(nivel=3, prompt=prompt, resposta="[BLOQUEADO]", bloqueado=True, motivo_bloqueio=motivo)
-        return f"[BLOQUEADO] {motivo}"
+        return f"[BLOQUEADO] {motivo}", historico
 
     # Validação semântica do input
     nocivo, motivo = _validar_semanticamente(prompt, "input")
     if nocivo:
         registrar(nivel=3, prompt=prompt, resposta="[BLOQUEADO]", bloqueado=True, motivo_bloqueio=motivo)
-        return f"[BLOQUEADO] {motivo}"
+        return f"[BLOQUEADO] {motivo}", historico
 
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": prompt}
-    ]
-
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + historico + [{"role": "user", "content": prompt}]
     resposta = chat(messages)
 
     # Filtro léxico de saída
@@ -72,13 +63,14 @@ def executar(prompt: str) -> str:
     if gatilho_saida:
         motivo = f"Filtro léxico (output) — conteúdo proibido: '{gatilho_saida}'"
         registrar(nivel=3, prompt=prompt, resposta="[BLOQUEADO]", bloqueado=True, motivo_bloqueio=motivo)
-        return f"[BLOQUEADO] {motivo}"
+        return f"[BLOQUEADO] {motivo}", historico
 
     # Validação semântica da saída
     nocivo, motivo = _validar_semanticamente(resposta, "output")
     if nocivo:
         registrar(nivel=3, prompt=prompt, resposta="[BLOQUEADO]", bloqueado=True, motivo_bloqueio=motivo)
-        return f"[BLOQUEADO] {motivo}"
+        return f"[BLOQUEADO] {motivo}", historico
 
+    historico_atualizado = historico + [{"role": "user", "content": prompt}, {"role": "assistant", "content": resposta}]
     registrar(nivel=3, prompt=prompt, resposta=resposta, bloqueado=False)
-    return resposta
+    return resposta, historico_atualizado
